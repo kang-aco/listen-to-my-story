@@ -1,0 +1,1229 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <!-- 페이지 기본 설정 -->
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>내 이야기를 들어줘!</title>
+
+  <style>
+    /* ===========================
+       전체 기본 스타일 설정
+    =========================== */
+
+    /* 모든 요소의 박스 크기 계산 방식 통일 */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    /* 페이지 전체 배경색과 폰트 설정 */
+    body {
+      font-family: 'Segoe UI', 'Apple SD Gothic Neo', '맑은 고딕', sans-serif;
+      background: linear-gradient(135deg, #fce4ec 0%, #e3f2fd 50%, #f3e5f5 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* ===========================
+       API 키 입력 화면 스타일
+    =========================== */
+
+    /* API 키 입력 화면 - 처음 접속 시 보이는 화면 */
+    #api-key-screen {
+      background: white;
+      border-radius: 24px;
+      padding: 48px 40px;
+      width: 90%;
+      max-width: 440px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.12);
+      text-align: center;
+      animation: fadeIn 0.5s ease;
+    }
+
+    /* API 키 화면의 이모지 아이콘 */
+    .api-screen-icon {
+      font-size: 56px;
+      margin-bottom: 16px;
+    }
+
+    /* API 키 화면 제목 */
+    .api-screen-title {
+      font-size: 24px;
+      font-weight: 700;
+      color: #5c6bc0;
+      margin-bottom: 8px;
+    }
+
+    /* API 키 화면 설명 텍스트 */
+    .api-screen-desc {
+      font-size: 14px;
+      color: #90a4ae;
+      margin-bottom: 32px;
+      line-height: 1.6;
+    }
+
+    /* API 키 입력창 */
+    #api-key-input {
+      width: 100%;
+      padding: 14px 16px;
+      border: 2px solid #e3f2fd;
+      border-radius: 12px;
+      font-size: 14px;
+      color: #37474f;
+      outline: none;
+      transition: border-color 0.3s ease;
+      margin-bottom: 16px;
+    }
+
+    /* 입력창 포커스 시 테두리 색 변경 */
+    #api-key-input:focus {
+      border-color: #7986cb;
+    }
+
+    /* API 키 저장 버튼 */
+    #save-api-key-btn {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, #7986cb, #64b5f6);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    /* 버튼 호버 효과 */
+    #save-api-key-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(121, 134, 203, 0.4);
+    }
+
+    /* API 키 안내 링크 텍스트 */
+    .api-help-text {
+      margin-top: 20px;
+      font-size: 12px;
+      color: #b0bec5;
+    }
+
+    .api-help-text a {
+      color: #7986cb;
+      text-decoration: none;
+    }
+
+    /* ===========================
+       채팅 화면 스타일
+    =========================== */
+
+    /* 채팅 전체 컨테이너 - 처음에는 숨겨져 있음 */
+    #chat-screen {
+      display: none; /* 처음에는 숨김, JavaScript로 표시 */
+      width: 100%;
+      max-width: 720px;
+      height: 100vh;
+      max-height: 100vh;
+      flex-direction: column;
+      background: white;
+      box-shadow: 0 0 60px rgba(0, 0, 0, 0.1);
+      border-radius: 0;
+      overflow: hidden;
+    }
+
+    /* 데스크탑에서 채팅창을 카드 형태로 표시 */
+    @media (min-width: 768px) {
+      #chat-screen {
+        height: 90vh;
+        max-height: 800px;
+        border-radius: 24px;
+        margin: 20px;
+      }
+    }
+
+    /* ===========================
+       헤더 스타일
+    =========================== */
+
+    /* 채팅 화면 상단 헤더 */
+    .chat-header {
+      background: linear-gradient(135deg, #7986cb, #64b5f6);
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0; /* 헤더 크기 고정 */
+    }
+
+    /* 헤더 왼쪽 영역 (아이콘 + 제목) */
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    /* 헤더의 상담사 아바타 */
+    .header-avatar {
+      width: 44px;
+      height: 44px;
+      background: rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+    }
+
+    /* 헤더 제목 텍스트 */
+    .header-title {
+      color: white;
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    /* 헤더 부제목 (온라인 상태 표시) */
+    .header-subtitle {
+      color: rgba(255, 255, 255, 0.85);
+      font-size: 12px;
+      margin-top: 2px;
+    }
+
+    /* 헤더 오른쪽 설정 버튼 */
+    .header-settings-btn {
+      background: rgba(255, 255, 255, 0.2);
+      border: none;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      cursor: pointer;
+      font-size: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s ease;
+      color: white;
+    }
+
+    .header-settings-btn:hover {
+      background: rgba(255, 255, 255, 0.35);
+    }
+
+    /* ===========================
+       메시지 목록 영역 스타일
+    =========================== */
+
+    /* 채팅 메시지들이 표시되는 스크롤 영역 */
+    #messages-container {
+      flex: 1; /* 남은 공간을 모두 차지 */
+      overflow-y: auto; /* 세로 스크롤 허용 */
+      padding: 20px 16px;
+      background: #f8f9ff;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    /* 스크롤바 스타일 (웹킷 브라우저) */
+    #messages-container::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    #messages-container::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    #messages-container::-webkit-scrollbar-thumb {
+      background: #c5cae9;
+      border-radius: 2px;
+    }
+
+    /* 날짜/시간 구분선 */
+    .date-divider {
+      text-align: center;
+      font-size: 11px;
+      color: #b0bec5;
+      margin: 8px 0;
+      position: relative;
+    }
+
+    .date-divider::before,
+    .date-divider::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      width: 35%;
+      height: 1px;
+      background: #e0e0e0;
+    }
+
+    .date-divider::before { left: 0; }
+    .date-divider::after { right: 0; }
+
+    /* ===========================
+       메시지 버블 스타일
+    =========================== */
+
+    /* 개별 메시지 묶음 (아바타 + 말풍선) */
+    .message-wrapper {
+      display: flex;
+      align-items: flex-end;
+      gap: 8px;
+      animation: slideIn 0.3s ease;
+    }
+
+    /* AI 메시지는 왼쪽 정렬 */
+    .message-wrapper.ai {
+      flex-direction: row;
+    }
+
+    /* 사용자 메시지는 오른쪽 정렬 */
+    .message-wrapper.user {
+      flex-direction: row-reverse;
+    }
+
+    /* AI 아바타 (말풍선 왼쪽에 표시) */
+    .message-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #7986cb, #64b5f6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      flex-shrink: 0;
+    }
+
+    /* 메시지 내용 영역 (말풍선 + 시간) */
+    .message-content {
+      max-width: 75%; /* 말풍선 최대 너비 */
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    /* 사용자 메시지 내용 영역 - 오른쪽 정렬 */
+    .message-wrapper.user .message-content {
+      align-items: flex-end;
+    }
+
+    /* AI 메시지 내용 영역 - 왼쪽 정렬 */
+    .message-wrapper.ai .message-content {
+      align-items: flex-start;
+    }
+
+    /* 실제 말풍선 */
+    .message-bubble {
+      padding: 12px 16px;
+      border-radius: 18px;
+      font-size: 14px;
+      line-height: 1.6;
+      word-break: break-word; /* 긴 단어 자동 줄바꿈 */
+      white-space: pre-wrap; /* 줄바꿈 유지 */
+    }
+
+    /* AI 메시지 말풍선 스타일 */
+    .message-wrapper.ai .message-bubble {
+      background: white;
+      color: #37474f;
+      border-bottom-left-radius: 4px; /* 아바타 쪽 모서리만 뾰족하게 */
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+
+    /* 사용자 메시지 말풍선 스타일 */
+    .message-wrapper.user .message-bubble {
+      background: linear-gradient(135deg, #7986cb, #5c6bc0);
+      color: white;
+      border-bottom-right-radius: 4px; /* 오른쪽 모서리 뾰족하게 */
+    }
+
+    /* 메시지 전송 시간 표시 */
+    .message-time {
+      font-size: 10px;
+      color: #b0bec5;
+      padding: 0 4px;
+    }
+
+    /* ===========================
+       로딩 인디케이터 스타일
+    =========================== */
+
+    /* AI가 응답 중일 때 표시되는 로딩 말풍선 */
+    .loading-bubble {
+      background: white;
+      padding: 14px 18px;
+      border-radius: 18px;
+      border-bottom-left-radius: 4px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      display: flex;
+      gap: 5px;
+      align-items: center;
+    }
+
+    /* 로딩 점 3개 */
+    .loading-dot {
+      width: 8px;
+      height: 8px;
+      background: #b0bec5;
+      border-radius: 50%;
+      animation: bounce 1.2s infinite ease-in-out;
+    }
+
+    /* 각 점마다 애니메이션 지연 시간 설정 */
+    .loading-dot:nth-child(1) { animation-delay: 0s; }
+    .loading-dot:nth-child(2) { animation-delay: 0.2s; }
+    .loading-dot:nth-child(3) { animation-delay: 0.4s; }
+
+    /* ===========================
+       에러 메시지 스타일
+    =========================== */
+
+    /* 에러 발생 시 표시되는 메시지 */
+    .error-message {
+      background: #fff3e0;
+      border: 1px solid #ffcc80;
+      color: #e65100;
+      padding: 12px 16px;
+      border-radius: 12px;
+      font-size: 13px;
+      line-height: 1.5;
+      text-align: center;
+    }
+
+    /* ===========================
+       입력 영역 스타일
+    =========================== */
+
+    /* 메시지 입력창과 전송 버튼이 있는 하단 영역 */
+    .chat-input-area {
+      padding: 16px;
+      background: white;
+      border-top: 1px solid #e8eaf6;
+      flex-shrink: 0; /* 입력창 크기 고정 */
+    }
+
+    /* 입력창과 버튼을 가로로 배치하는 컨테이너 */
+    .input-wrapper {
+      display: flex;
+      gap: 10px;
+      align-items: flex-end;
+    }
+
+    /* 텍스트 입력창 */
+    #message-input {
+      flex: 1;
+      padding: 12px 16px;
+      border: 2px solid #e8eaf6;
+      border-radius: 24px;
+      font-size: 14px;
+      color: #37474f;
+      outline: none;
+      resize: none; /* 사용자가 크기 조절 못하게 */
+      max-height: 120px; /* 최대 높이 제한 */
+      min-height: 44px;
+      line-height: 1.5;
+      font-family: inherit;
+      transition: border-color 0.3s ease;
+      overflow-y: auto;
+    }
+
+    /* 입력창 포커스 시 테두리 색 변경 */
+    #message-input:focus {
+      border-color: #7986cb;
+    }
+
+    /* 전송 버튼 */
+    #send-btn {
+      width: 44px;
+      height: 44px;
+      background: linear-gradient(135deg, #7986cb, #64b5f6);
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      font-size: 18px;
+    }
+
+    /* 전송 버튼 호버 효과 */
+    #send-btn:hover {
+      transform: scale(1.05);
+      box-shadow: 0 4px 12px rgba(121, 134, 203, 0.4);
+    }
+
+    /* 전송 버튼 비활성화 상태 */
+    #send-btn:disabled {
+      background: #e0e0e0;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    /* 입력창 아래 안내 텍스트 */
+    .input-hint {
+      font-size: 11px;
+      color: #b0bec5;
+      text-align: center;
+      margin-top: 8px;
+    }
+
+    /* ===========================
+       애니메이션 정의
+    =========================== */
+
+    /* 화면 나타나는 효과 */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* 메시지 슬라이드 인 효과 */
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* 로딩 점 튀어오르는 효과 */
+    @keyframes bounce {
+      0%, 80%, 100% { transform: scale(0.8); opacity: 0.5; }
+      40% { transform: scale(1.2); opacity: 1; }
+    }
+
+    /* ===========================
+       모달 스타일 (설정 변경)
+    =========================== */
+
+    /* 설정 모달 배경 오버레이 */
+    .modal-overlay {
+      display: none; /* 기본적으로 숨김 */
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      animation: fadeIn 0.2s ease;
+    }
+
+    /* 설정 모달 내용 박스 */
+    .modal-box {
+      background: white;
+      border-radius: 20px;
+      padding: 32px;
+      width: 90%;
+      max-width: 400px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+    }
+
+    /* 모달 제목 */
+    .modal-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: #5c6bc0;
+      margin-bottom: 8px;
+    }
+
+    /* 모달 설명 텍스트 */
+    .modal-desc {
+      font-size: 13px;
+      color: #90a4ae;
+      margin-bottom: 20px;
+    }
+
+    /* 모달 안의 입력창 */
+    .modal-input {
+      width: 100%;
+      padding: 12px 14px;
+      border: 2px solid #e3f2fd;
+      border-radius: 10px;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.3s ease;
+      margin-bottom: 16px;
+    }
+
+    .modal-input:focus {
+      border-color: #7986cb;
+    }
+
+    /* 모달 버튼들 */
+    .modal-buttons {
+      display: flex;
+      gap: 10px;
+    }
+
+    /* 모달 취소 버튼 */
+    .modal-cancel-btn {
+      flex: 1;
+      padding: 12px;
+      background: #f5f5f5;
+      border: none;
+      border-radius: 10px;
+      font-size: 14px;
+      cursor: pointer;
+      color: #78909c;
+      transition: background 0.2s ease;
+    }
+
+    .modal-cancel-btn:hover {
+      background: #eeeeee;
+    }
+
+    /* 모달 저장 버튼 */
+    .modal-save-btn {
+      flex: 1;
+      padding: 12px;
+      background: linear-gradient(135deg, #7986cb, #64b5f6);
+      border: none;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      color: white;
+      transition: transform 0.2s ease;
+    }
+
+    .modal-save-btn:hover {
+      transform: translateY(-1px);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ===========================
+       API 키 입력 화면
+       처음 방문 시 또는 API 키가 없을 때 표시
+  =========================== -->
+  <div id="api-key-screen">
+    <!-- 상단 아이콘 -->
+    <div class="api-screen-icon">💙</div>
+
+    <!-- 제목과 설명 -->
+    <h1 class="api-screen-title">내 이야기를 들어줘!</h1>
+    <p class="api-screen-desc">
+      24시간 언제든지 당신의 이야기를 들어드립니다.<br />
+      시작하려면 Gemini API 키를 입력해주세요.
+    </p>
+
+    <!-- API 키 입력창 -->
+    <input
+      type="password"
+      id="api-key-input"
+      placeholder="Gemini API 키를 입력하세요"
+      autocomplete="off"
+    />
+
+    <!-- API 키 저장 버튼 -->
+    <button id="save-api-key-btn">시작하기 ✨</button>
+
+    <!-- API 키 발급 안내 -->
+    <p class="api-help-text">
+      API 키가 없으신가요?
+      <a href="https://aistudio.google.com/app/apikey" target="_blank">
+        Google AI Studio에서 무료로 발급받기
+      </a>
+    </p>
+  </div>
+
+  <!-- ===========================
+       채팅 화면
+       API 키 저장 후 표시
+  =========================== -->
+  <div id="chat-screen">
+
+    <!-- 채팅 헤더 -->
+    <div class="chat-header">
+      <div class="header-left">
+        <!-- 상담사 아바타 -->
+        <div class="header-avatar">🤗</div>
+        <div>
+          <div class="header-title">내 이야기를 들어줘 💙</div>
+          <div class="header-subtitle">● 24시간 상담 중</div>
+        </div>
+      </div>
+
+      <!-- 설정(API 키 변경) 버튼 -->
+      <button class="header-settings-btn" id="settings-btn" title="API 키 변경">
+        ⚙️
+      </button>
+    </div>
+
+    <!-- 메시지 목록 영역 -->
+    <div id="messages-container">
+      <!-- JavaScript로 메시지들이 이곳에 추가됨 -->
+    </div>
+
+    <!-- 메시지 입력 영역 -->
+    <div class="chat-input-area">
+      <div class="input-wrapper">
+        <!-- 텍스트 입력창 (textarea 사용으로 여러 줄 입력 가능) -->
+        <textarea
+          id="message-input"
+          placeholder="이야기를 입력하세요... (Enter로 전송, Shift+Enter로 줄바꿈)"
+          rows="1"
+        ></textarea>
+
+        <!-- 전송 버튼 -->
+        <button id="send-btn" title="전송">
+          ➤
+        </button>
+      </div>
+
+      <!-- 키보드 단축키 안내 -->
+      <p class="input-hint">Enter 전송 · Shift+Enter 줄바꿈</p>
+    </div>
+  </div>
+
+  <!-- ===========================
+       설정 모달 (API 키 변경)
+  =========================== -->
+  <div class="modal-overlay" id="settings-modal">
+    <div class="modal-box">
+      <h2 class="modal-title">⚙️ API 키 변경</h2>
+      <p class="modal-desc">새로운 Gemini API 키를 입력하세요.</p>
+
+      <!-- 새 API 키 입력창 -->
+      <input
+        type="password"
+        class="modal-input"
+        id="new-api-key-input"
+        placeholder="새 API 키 입력"
+        autocomplete="off"
+      />
+
+      <!-- 모달 버튼들 -->
+      <div class="modal-buttons">
+        <button class="modal-cancel-btn" id="modal-cancel-btn">취소</button>
+        <button class="modal-save-btn" id="modal-save-btn">저장</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* ===========================
+       JavaScript 코드 시작
+    =========================== */
+
+    // -----------------------------------------------
+    // 1. 전역 변수 선언
+    // -----------------------------------------------
+
+    // Gemini API를 사용하기 위한 엔드포인트 주소
+    const API_ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-preview:generateContent';
+
+    // 대화 히스토리 배열 (AI에게 전달할 이전 대화 내용 저장)
+    let conversationHistory = [];
+
+    // AI 응답을 기다리는 중인지 여부 (중복 전송 방지)
+    let isLoading = false;
+
+    // AI 상담사 시스템 프롬프트 (AI의 역할 설정)
+    const SYSTEM_PROMPT = `당신은 따뜻하고 공감능력이 뛰어난 심리 상담사입니다.
+24시간 언제든지 사용자의 이야기를 들어주고,
+감정을 이해하며, 심리적 지지를 제공합니다.
+항상 한국어로 대화하세요.
+판단하지 않고, 공감하며, 사용자가 자신의 감정을
+안전하게 표현할 수 있는 공간을 만들어주세요.
+필요한 경우 전문적인 도움을 받을 것을 권유하세요.`;
+
+    // -----------------------------------------------
+    // 2. HTML 요소 가져오기
+    // -----------------------------------------------
+
+    // 각 화면 요소 참조
+    const apiKeyScreen = document.getElementById('api-key-screen');
+    const chatScreen = document.getElementById('chat-screen');
+
+    // API 키 입력 관련 요소들
+    const apiKeyInput = document.getElementById('api-key-input');
+    const saveApiKeyBtn = document.getElementById('save-api-key-btn');
+
+    // 채팅 관련 요소들
+    const messagesContainer = document.getElementById('messages-container');
+    const messageInput = document.getElementById('message-input');
+    const sendBtn = document.getElementById('send-btn');
+
+    // 설정 모달 관련 요소들
+    const settingsBtn = document.getElementById('settings-btn');
+    const settingsModal = document.getElementById('settings-modal');
+    const newApiKeyInput = document.getElementById('new-api-key-input');
+    const modalCancelBtn = document.getElementById('modal-cancel-btn');
+    const modalSaveBtn = document.getElementById('modal-save-btn');
+
+    // -----------------------------------------------
+    // 3. 초기화 함수 - 페이지 로드 시 실행
+    // -----------------------------------------------
+
+    /**
+     * 페이지 시작 시 실행되는 초기화 함수
+     * localStorage에 API 키가 있으면 채팅 화면으로, 없으면 API 키 입력 화면으로 이동
+     */
+    function init() {
+      // localStorage에서 저장된 API 키 가져오기
+      const savedApiKey = localStorage.getItem('gemini_api_key');
+
+      if (savedApiKey) {
+        // API 키가 있으면 바로 채팅 화면 표시
+        showChatScreen();
+      } else {
+        // API 키가 없으면 API 키 입력 화면 표시
+        showApiKeyScreen();
+      }
+    }
+
+    // -----------------------------------------------
+    // 4. 화면 전환 함수들
+    // -----------------------------------------------
+
+    /**
+     * API 키 입력 화면 표시
+     */
+    function showApiKeyScreen() {
+      apiKeyScreen.style.display = 'block';
+      chatScreen.style.display = 'none';
+      // 입력창 초기화
+      apiKeyInput.value = '';
+    }
+
+    /**
+     * 채팅 화면 표시 및 초기화
+     */
+    function showChatScreen() {
+      apiKeyScreen.style.display = 'none';
+      // 채팅 화면을 flex로 표시 (flex-direction: column 레이아웃 사용)
+      chatScreen.style.display = 'flex';
+
+      // 처음 채팅 화면이 열릴 때만 환영 메시지 추가
+      if (messagesContainer.children.length === 0) {
+        addWelcomeMessage();
+      }
+    }
+
+    // -----------------------------------------------
+    // 5. API 키 저장 처리
+    // -----------------------------------------------
+
+    /**
+     * API 키를 localStorage에 저장하는 함수
+     * @param {string} apiKey - 저장할 API 키
+     * @returns {boolean} 저장 성공 여부
+     */
+    function saveApiKey(apiKey) {
+      // API 키가 비어있는지 확인
+      const trimmedKey = apiKey.trim();
+      if (!trimmedKey) {
+        alert('API 키를 입력해주세요.');
+        return false;
+      }
+
+      // localStorage에 API 키 저장
+      localStorage.setItem('gemini_api_key', trimmedKey);
+      return true;
+    }
+
+    /**
+     * localStorage에서 API 키 가져오기
+     * @returns {string|null} 저장된 API 키 또는 null
+     */
+    function getApiKey() {
+      return localStorage.getItem('gemini_api_key');
+    }
+
+    // API 키 저장 버튼 클릭 이벤트
+    saveApiKeyBtn.addEventListener('click', function () {
+      const apiKey = apiKeyInput.value;
+      if (saveApiKey(apiKey)) {
+        // 저장 성공 시 채팅 화면으로 이동
+        showChatScreen();
+      }
+    });
+
+    // API 키 입력창에서 Enter 키 눌렀을 때 저장
+    apiKeyInput.addEventListener('keypress', function (e) {
+      if (e.key === 'Enter') {
+        saveApiKeyBtn.click();
+      }
+    });
+
+    // -----------------------------------------------
+    // 6. 메시지 표시 함수들
+    // -----------------------------------------------
+
+    /**
+     * 현재 시간을 "오전 09:30" 형식으로 반환
+     * @returns {string} 포맷된 시간 문자열
+     */
+    function getCurrentTime() {
+      const now = new Date();
+      const hours = now.getHours();
+      const minutes = String(now.getMinutes()).padStart(2, '0');
+      const period = hours < 12 ? '오전' : '오후';
+      const displayHours = hours % 12 || 12; // 12시간 형식으로 변환
+      return `${period} ${displayHours}:${minutes}`;
+    }
+
+    /**
+     * 채팅창에 메시지 추가
+     * @param {string} text - 메시지 내용
+     * @param {string} sender - 'user' 또는 'ai'
+     */
+    function addMessage(text, sender) {
+      // 메시지 wrapper 요소 생성
+      const wrapper = document.createElement('div');
+      wrapper.classList.add('message-wrapper', sender);
+
+      // AI 메시지일 때만 아바타 표시
+      if (sender === 'ai') {
+        const avatar = document.createElement('div');
+        avatar.classList.add('message-avatar');
+        avatar.textContent = '🤗';
+        wrapper.appendChild(avatar);
+      }
+
+      // 메시지 내용 영역 생성
+      const content = document.createElement('div');
+      content.classList.add('message-content');
+
+      // 말풍선 생성
+      const bubble = document.createElement('div');
+      bubble.classList.add('message-bubble');
+      bubble.textContent = text; // XSS 방지를 위해 textContent 사용
+
+      // 시간 표시 생성
+      const time = document.createElement('span');
+      time.classList.add('message-time');
+      time.textContent = getCurrentTime();
+
+      // 요소들 조합
+      content.appendChild(bubble);
+      content.appendChild(time);
+      wrapper.appendChild(content);
+
+      // 메시지 컨테이너에 추가
+      messagesContainer.appendChild(wrapper);
+
+      // 스크롤을 최신 메시지로 이동
+      scrollToBottom();
+    }
+
+    /**
+     * 로딩 인디케이터(점 3개 애니메이션) 추가
+     * @returns {HTMLElement} 생성된 로딩 요소 (나중에 제거하기 위해 반환)
+     */
+    function addLoadingIndicator() {
+      const wrapper = document.createElement('div');
+      wrapper.classList.add('message-wrapper', 'ai');
+      wrapper.id = 'loading-indicator'; // 나중에 찾아서 제거하기 위한 ID
+
+      // AI 아바타
+      const avatar = document.createElement('div');
+      avatar.classList.add('message-avatar');
+      avatar.textContent = '🤗';
+
+      // 로딩 말풍선
+      const loadingBubble = document.createElement('div');
+      loadingBubble.classList.add('loading-bubble');
+
+      // 점 3개 생성
+      for (let i = 0; i < 3; i++) {
+        const dot = document.createElement('div');
+        dot.classList.add('loading-dot');
+        loadingBubble.appendChild(dot);
+      }
+
+      wrapper.appendChild(avatar);
+      wrapper.appendChild(loadingBubble);
+      messagesContainer.appendChild(wrapper);
+
+      scrollToBottom();
+      return wrapper;
+    }
+
+    /**
+     * 로딩 인디케이터 제거
+     */
+    function removeLoadingIndicator() {
+      const loadingEl = document.getElementById('loading-indicator');
+      if (loadingEl) {
+        loadingEl.remove();
+      }
+    }
+
+    /**
+     * 에러 메시지를 채팅창에 표시
+     * @param {string} errorText - 표시할 에러 메시지
+     */
+    function addErrorMessage(errorText) {
+      const errorEl = document.createElement('div');
+      errorEl.classList.add('error-message');
+      errorEl.textContent = errorText;
+      messagesContainer.appendChild(errorEl);
+      scrollToBottom();
+    }
+
+    /**
+     * 채팅창을 가장 아래로 스크롤
+     */
+    function scrollToBottom() {
+      // setTimeout으로 DOM 업데이트 후 스크롤 (렌더링 완료 후 실행)
+      setTimeout(() => {
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+      }, 50);
+    }
+
+    /**
+     * 처음 채팅 화면 열릴 때 환영 메시지 표시
+     */
+    function addWelcomeMessage() {
+      // 날짜 구분선 추가
+      const dateDivider = document.createElement('div');
+      dateDivider.classList.add('date-divider');
+      const today = new Date();
+      dateDivider.textContent = `${today.getMonth() + 1}월 ${today.getDate()}일`;
+      messagesContainer.appendChild(dateDivider);
+
+      // 환영 메시지 추가
+      addMessage(
+        '안녕하세요! 저는 당신의 이야기를 들어주는 상담사예요. 오늘 어떤 이야기를 나눠볼까요? 😊',
+        'ai'
+      );
+    }
+
+    // -----------------------------------------------
+    // 7. Gemini API 호출 함수
+    // -----------------------------------------------
+
+    /**
+     * Gemini API를 호출하여 AI 응답 받기
+     * @param {string} userMessage - 사용자가 입력한 메시지
+     * @returns {Promise<string>} AI의 응답 텍스트
+     */
+    async function callGeminiAPI(userMessage) {
+      // localStorage에서 API 키 가져오기
+      const apiKey = getApiKey();
+
+      // 사용자 메시지를 대화 히스토리에 추가
+      conversationHistory.push({
+        role: 'user',
+        parts: [{ text: userMessage }]
+      });
+
+      // API 요청 보내기
+      const response = await fetch(`${API_ENDPOINT}?key=${apiKey}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          // 전체 대화 히스토리 전달 (맥락 유지)
+          contents: conversationHistory,
+
+          // 시스템 프롬프트 (AI의 역할 정의)
+          systemInstruction: {
+            parts: [{ text: SYSTEM_PROMPT }]
+          },
+
+          // AI 응답 설정
+          generationConfig: {
+            temperature: 0.9,       // 창의성 수준 (0~1, 높을수록 다양한 응답)
+            maxOutputTokens: 1000   // 최대 응답 길이
+          }
+        })
+      });
+
+      // 응답이 실패한 경우 에러 처리
+      if (!response.ok) {
+        // HTTP 상태 코드에 따른 에러 메시지
+        if (response.status === 400) {
+          throw new Error('API 키가 올바르지 않습니다. 설정에서 API 키를 확인해주세요.');
+        } else if (response.status === 429) {
+          throw new Error('API 요청 한도를 초과했습니다. 잠시 후 다시 시도해주세요.');
+        } else {
+          throw new Error(`서버 오류가 발생했습니다. (오류 코드: ${response.status})`);
+        }
+      }
+
+      // 응답 JSON 파싱
+      const data = await response.json();
+
+      // AI 응답 텍스트 추출
+      const aiText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+      // 응답 텍스트가 없는 경우
+      if (!aiText) {
+        throw new Error('AI 응답을 받지 못했습니다. 다시 시도해주세요.');
+      }
+
+      // AI 응답을 대화 히스토리에 추가 (다음 대화에서 맥락 유지)
+      conversationHistory.push({
+        role: 'model',
+        parts: [{ text: aiText }]
+      });
+
+      return aiText;
+    }
+
+    // -----------------------------------------------
+    // 8. 메시지 전송 처리
+    // -----------------------------------------------
+
+    /**
+     * 메시지를 전송하고 AI 응답을 받는 메인 함수
+     */
+    async function sendMessage() {
+      // 이미 로딩 중이면 무시 (중복 전송 방지)
+      if (isLoading) return;
+
+      // 입력창의 텍스트 가져오기 (앞뒤 공백 제거)
+      const userText = messageInput.value.trim();
+
+      // 빈 메시지는 전송하지 않음
+      if (!userText) return;
+
+      // 로딩 상태 시작
+      isLoading = true;
+      sendBtn.disabled = true; // 전송 버튼 비활성화
+
+      // 입력창 초기화 및 높이 리셋
+      messageInput.value = '';
+      messageInput.style.height = 'auto';
+
+      // 사용자 메시지를 채팅창에 표시
+      addMessage(userText, 'user');
+
+      // 로딩 인디케이터 표시 (AI가 생각하는 중...)
+      addLoadingIndicator();
+
+      try {
+        // Gemini API 호출하여 AI 응답 받기
+        const aiResponse = await callGeminiAPI(userText);
+
+        // 로딩 인디케이터 제거
+        removeLoadingIndicator();
+
+        // AI 응답 메시지 표시
+        addMessage(aiResponse, 'ai');
+
+      } catch (error) {
+        // 에러 발생 시 처리
+        removeLoadingIndicator();
+
+        // 에러 메시지 유형에 따라 다른 안내 표시
+        if (error.message.includes('API 키')) {
+          // API 키 오류
+          addErrorMessage('⚠️ ' + error.message);
+        } else if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+          // 네트워크 오류
+          addErrorMessage('🌐 인터넷 연결을 확인해주세요. 잠시 후 다시 시도해주세요.');
+        } else {
+          // 기타 오류
+          addErrorMessage('😔 ' + error.message);
+        }
+
+        // 오류 시 대화 히스토리에서 마지막 사용자 메시지 제거 (재전송 가능하도록)
+        if (conversationHistory.length > 0 &&
+            conversationHistory[conversationHistory.length - 1].role === 'user') {
+          conversationHistory.pop();
+        }
+
+        console.error('API 호출 오류:', error); // 개발자 콘솔에 상세 오류 출력
+      } finally {
+        // 로딩 상태 종료 (성공/실패 관계없이 항상 실행)
+        isLoading = false;
+        sendBtn.disabled = false; // 전송 버튼 다시 활성화
+        messageInput.focus(); // 입력창에 포커스 복원
+      }
+    }
+
+    // -----------------------------------------------
+    // 9. 입력창 이벤트 처리
+    // -----------------------------------------------
+
+    // 전송 버튼 클릭 이벤트
+    sendBtn.addEventListener('click', sendMessage);
+
+    // 키보드 입력 이벤트 (Enter: 전송, Shift+Enter: 줄바꿈)
+    messageInput.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        // Shift 없이 Enter 누르면 전송
+        e.preventDefault(); // 기본 줄바꿈 동작 방지
+        sendMessage();
+      }
+      // Shift+Enter는 기본 동작(줄바꿈)이 그대로 실행됨
+    });
+
+    // 입력창 자동 높이 조절 (내용에 따라 높이 변경)
+    messageInput.addEventListener('input', function () {
+      // 높이를 auto로 리셋 후 실제 내용 높이로 조정
+      this.style.height = 'auto';
+      this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+    });
+
+    // -----------------------------------------------
+    // 10. 설정 모달 (API 키 변경) 처리
+    // -----------------------------------------------
+
+    // 설정 버튼 클릭 시 모달 열기
+    settingsBtn.addEventListener('click', function () {
+      settingsModal.style.display = 'flex';
+      newApiKeyInput.value = ''; // 입력창 초기화
+      newApiKeyInput.focus();
+    });
+
+    // 취소 버튼 클릭 시 모달 닫기
+    modalCancelBtn.addEventListener('click', function () {
+      settingsModal.style.display = 'none';
+    });
+
+    // 모달 배경 클릭 시 모달 닫기
+    settingsModal.addEventListener('click', function (e) {
+      // 클릭된 요소가 모달 오버레이 자체일 때만 닫기
+      if (e.target === settingsModal) {
+        settingsModal.style.display = 'none';
+      }
+    });
+
+    // 새 API 키 저장 버튼 클릭
+    modalSaveBtn.addEventListener('click', function () {
+      const newKey = newApiKeyInput.value.trim();
+
+      if (!newKey) {
+        alert('새 API 키를 입력해주세요.');
+        return;
+      }
+
+      // 새 API 키 저장
+      localStorage.setItem('gemini_api_key', newKey);
+
+      // 모달 닫기
+      settingsModal.style.display = 'none';
+
+      // 사용자에게 변경 완료 알림
+      addMessage('API 키가 변경되었습니다. 계속 대화를 이어가세요! 😊', 'ai');
+    });
+
+    // 모달 입력창에서 Enter 키 처리
+    newApiKeyInput.addEventListener('keypress', function (e) {
+      if (e.key === 'Enter') {
+        modalSaveBtn.click();
+      }
+    });
+
+    // -----------------------------------------------
+    // 11. 페이지 로드 완료 시 초기화 실행
+    // -----------------------------------------------
+
+    // 페이지가 완전히 로드된 후 초기화 함수 실행
+    init();
+  </script>
+</body>
+</html>
