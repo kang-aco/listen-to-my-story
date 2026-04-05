@@ -595,6 +595,80 @@
     .modal-save-btn:hover {
       transform: translateY(-1px);
     }
+
+    /* ===========================
+       마이크 버튼 스타일 (음성 입력)
+    =========================== */
+
+    /* 마이크 버튼 기본 스타일 */
+    #mic-btn {
+      width: 44px;
+      height: 44px;
+      background: linear-gradient(135deg, #ef9a9a, #e57373);
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      font-size: 18px;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    /* 마이크 버튼 호버 효과 */
+    #mic-btn:hover {
+      transform: scale(1.05);
+    }
+
+    /* 녹음 중일 때 마이크 버튼 스타일 (빨간색 + 펄스 애니메이션) */
+    #mic-btn.recording {
+      background: linear-gradient(135deg, #f44336, #c62828);
+      animation: pulse 1s infinite;
+    }
+
+    /* 브라우저가 음성 인식을 지원하지 않을 때 버튼 숨기기 */
+    #mic-btn.hidden {
+      display: none;
+    }
+
+    /* 펄스(맥박) 애니메이션 - 녹음 중임을 시각적으로 표현 */
+    @keyframes pulse {
+      0%   { box-shadow: 0 0 0 0 rgba(244, 67, 54, 0.4); }
+      70%  { box-shadow: 0 0 0 10px rgba(244, 67, 54, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(244, 67, 54, 0); }
+    }
+
+    /* ===========================
+       스피커 버튼 스타일 (음성 출력)
+    =========================== */
+
+    /* 헤더 음성 출력 토글 버튼 */
+    .header-voice-btn {
+      background: rgba(255, 255, 255, 0.2);
+      border: none;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      cursor: pointer;
+      font-size: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s ease;
+      color: white;
+      margin-right: 8px; /* 설정 버튼과의 간격 */
+    }
+
+    /* 스피커 버튼 호버 효과 */
+    .header-voice-btn:hover {
+      background: rgba(255, 255, 255, 0.35);
+    }
+
+    /* 음소거 상태일 때 반투명하게 표시 */
+    .header-voice-btn.muted {
+      opacity: 0.5;
+    }
   </style>
 </head>
 <body>
@@ -659,10 +733,18 @@
         </div>
       </div>
 
-      <!-- 설정(API 키 변경) 버튼 -->
-      <button class="header-settings-btn" id="settings-btn" title="API 키 변경">
-        ⚙️
-      </button>
+      <!-- 헤더 오른쪽 버튼 영역 (스피커 + 설정) -->
+      <div style="display:flex;align-items:center;">
+        <!-- 음성 출력 ON/OFF 토글 버튼 (스피커 아이콘) -->
+        <button class="header-voice-btn" id="voice-toggle-btn" title="음성 출력 켜기/끄기">
+          🔊
+        </button>
+
+        <!-- 설정(API 키 변경) 버튼 -->
+        <button class="header-settings-btn" id="settings-btn" title="API 키 변경">
+          ⚙️
+        </button>
+      </div>
     </div>
 
     <!-- 메시지 목록 영역 -->
@@ -679,6 +761,11 @@
           placeholder="이야기를 입력하세요... (Enter로 전송, Shift+Enter로 줄바꿈)"
           rows="1"
         ></textarea>
+
+        <!-- 마이크 버튼 (음성 입력) - 브라우저 미지원 시 JavaScript로 숨김 처리 -->
+        <button id="mic-btn" title="음성으로 말하기">
+          🎤
+        </button>
 
         <!-- 전송 버튼 -->
         <button id="send-btn" title="전송">
@@ -796,6 +883,10 @@
     const newApiKeyInput = document.getElementById('new-api-key-input');
     const modalCancelBtn = document.getElementById('modal-cancel-btn');
     const modalSaveBtn = document.getElementById('modal-save-btn');
+
+    // 음성 기능 관련 요소들
+    const micBtn = document.getElementById('mic-btn');           // 마이크 버튼
+    const voiceToggleBtn = document.getElementById('voice-toggle-btn'); // 스피커 토글 버튼
 
     // -----------------------------------------------
     // 3. 초기화 함수 - 페이지 로드 시 실행
@@ -1232,6 +1323,9 @@
         // AI 응답 메시지 표시
         addMessage(aiResponse, 'ai');
 
+        // AI 응답을 음성으로 읽어주기 (TTS가 켜져 있을 때만)
+        speakText(aiResponse);
+
       } catch (error) {
         // 에러 발생 시 처리
         removeLoadingIndicator();
@@ -1390,7 +1484,142 @@
     });
 
     // -----------------------------------------------
-    // 12. 페이지 로드 완료 시 초기화 실행
+    // 12. 음성 입력 (STT - Speech to Text) 설정
+    // -----------------------------------------------
+
+    // Web Speech API의 SpeechRecognition 객체 가져오기
+    // Chrome은 webkitSpeechRecognition, 표준은 SpeechRecognition 사용
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    let recognition = null; // 음성 인식 객체
+    let isRecording = false; // 현재 녹음 중인지 여부
+
+    if (SpeechRecognition) {
+      // 브라우저가 음성 인식을 지원하는 경우 초기화
+      recognition = new SpeechRecognition();
+      recognition.lang = 'ko-KR';        // 한국어로 음성 인식
+      recognition.continuous = false;     // 한 번만 인식 (말이 끝나면 자동 종료)
+      recognition.interimResults = false; // 중간 결과 없이 최종 결과만 사용
+
+      // 음성 인식 성공 시: 변환된 텍스트를 입력창에 넣고 자동 전송
+      recognition.onresult = function(event) {
+        const transcript = event.results[0][0].transcript; // 인식된 텍스트
+        messageInput.value = transcript;   // 입력창에 텍스트 삽입
+        stopRecording();                   // 녹음 종료 처리
+        sendMessage();                     // 자동으로 메시지 전송
+      };
+
+      // 음성 인식 오류 발생 시 처리
+      recognition.onerror = function(event) {
+        stopRecording();
+        // 'no-speech'(말이 없음)는 오류 메시지 생략 (흔한 정상 상황)
+        if (event.error !== 'no-speech') {
+          addErrorMessage('🎤 음성 인식 오류: ' + event.error);
+        }
+      };
+
+      // 음성 인식이 종료될 때 (자동 또는 수동 종료)
+      recognition.onend = function() {
+        stopRecording();
+      };
+
+    } else {
+      // 브라우저가 음성 인식을 지원하지 않아도 버튼은 표시하고, 클릭 시 안내 메시지 출력
+    }
+
+    /**
+     * 녹음 시작 함수
+     * 마이크 버튼을 빨간색으로 바꾸고 음성 인식 시작
+     */
+    function startRecording() {
+      if (!recognition) {
+        alert('이 브라우저는 음성 인식을 지원하지 않습니다. Chrome 또는 Edge를 사용해주세요.');
+        return;
+      }
+      isRecording = true;
+      micBtn.classList.add('recording');        // 빨간색 + 펄스 애니메이션
+      micBtn.title = '녹음 중... (클릭하여 중지)';
+      recognition.start(); // 음성 인식 시작
+    }
+
+    /**
+     * 녹음 종료 함수
+     * 마이크 버튼을 원래 상태로 되돌리고 음성 인식 중지
+     */
+    function stopRecording() {
+      isRecording = false;
+      micBtn.classList.remove('recording');     // 원래 색상으로 복원
+      micBtn.title = '음성으로 말하기';
+      try {
+        recognition.stop(); // 음성 인식 중지 (이미 종료된 경우 오류 무시)
+      } catch(e) { /* 이미 중지된 경우 무시 */ }
+    }
+
+    // 마이크 버튼 클릭 이벤트: 녹음 토글 (시작/중지)
+    micBtn.addEventListener('click', function() {
+      if (isRecording) {
+        stopRecording(); // 녹음 중이면 중지
+      } else {
+        startRecording(); // 녹음 중이 아니면 시작
+      }
+    });
+
+    // -----------------------------------------------
+    // 13. 음성 출력 (TTS - Text to Speech) 설정
+    // -----------------------------------------------
+
+    // localStorage에서 TTS 설정 불러오기
+    // 'false' 문자열이 저장된 경우만 OFF, 그 외(null 포함)는 기본값 ON
+    let isTtsEnabled = localStorage.getItem('tts_enabled') !== 'false';
+
+    /**
+     * 스피커 버튼 아이콘과 상태를 현재 설정에 맞게 업데이트
+     */
+    function updateVoiceBtn() {
+      voiceToggleBtn.textContent = isTtsEnabled ? '🔊' : '🔇';           // 아이콘 변경
+      voiceToggleBtn.classList.toggle('muted', !isTtsEnabled);           // 음소거 스타일 적용
+      voiceToggleBtn.title = isTtsEnabled ? '음성 출력 끄기' : '음성 출력 켜기'; // 툴팁 변경
+    }
+
+    // 스피커 버튼 초기 상태 적용
+    updateVoiceBtn();
+
+    // 스피커 버튼 클릭 시 TTS ON/OFF 토글
+    voiceToggleBtn.addEventListener('click', function() {
+      isTtsEnabled = !isTtsEnabled; // 상태 반전
+      localStorage.setItem('tts_enabled', isTtsEnabled); // 설정 저장 (새로고침 후에도 유지)
+
+      // TTS를 끄면 현재 재생 중인 음성도 즉시 중지
+      if (!isTtsEnabled) {
+        window.speechSynthesis.cancel();
+      }
+
+      updateVoiceBtn(); // 버튼 아이콘 업데이트
+    });
+
+    /**
+     * 텍스트를 음성으로 읽어주는 함수 (TTS)
+     * @param {string} text - 읽어줄 텍스트
+     */
+    function speakText(text) {
+      // TTS가 꺼져 있거나 브라우저가 지원하지 않으면 실행하지 않음
+      if (!isTtsEnabled || !window.speechSynthesis) return;
+
+      // 이전에 재생 중인 음성이 있으면 먼저 중지
+      window.speechSynthesis.cancel();
+
+      // 음성 출력 설정
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'ko-KR';  // 한국어 음성 사용
+      utterance.rate = 1.0;      // 말하기 속도 (0.5~2.0, 1.0이 기본값)
+      utterance.pitch = 1.1;     // 음높이 (0~2.0, 1.0이 기본값, 1.1은 약간 높음)
+
+      // 음성 출력 시작
+      window.speechSynthesis.speak(utterance);
+    }
+
+    // -----------------------------------------------
+    // 14. 페이지 로드 완료 시 초기화 실행
     // -----------------------------------------------
 
     // 페이지가 완전히 로드된 후 초기화 함수 실행
