@@ -6,6 +6,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>내 이야기를 들어줘!</title>
 
+  <!-- PWA 설정 -->
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#7986cb" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="들어줘" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+
   <style>
     /* ===========================
        전체 기본 스타일 설정
@@ -1624,6 +1633,17 @@
 
     // 페이지가 완전히 로드된 후 초기화 함수 실행
     init();
+
+    // -----------------------------------------------
+    // 15. PWA 서비스 워커 등록
+    // -----------------------------------------------
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+          .then(() => console.log('서비스 워커 등록 완료'))
+          .catch((err) => console.warn('서비스 워커 등록 실패:', err));
+      });
+    }
   </script>
 </body>
 </html>
