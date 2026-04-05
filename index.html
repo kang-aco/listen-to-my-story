@@ -726,7 +726,21 @@
     // -----------------------------------------------
 
     // Gemini API를 사용하기 위한 엔드포인트 주소
-    const API_ENDPOINT = 'https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent';
+    // API 기본 주소 (모델명은 자동 감지 후 동적으로 설정)
+    const API_BASE = 'https://generativelanguage.googleapis.com';
+
+    // 현재 사용할 모델명 (자동 감지됨)
+    let currentModel = localStorage.getItem('gemini_model') || '';
+
+    // 시도할 모델 목록 (순서대로 시도)
+    const CANDIDATE_MODELS = [
+      'gemini-1.5-flash',
+      'gemini-1.5-flash-latest',
+      'gemini-1.5-flash-001',
+      'gemini-1.5-pro',
+      'gemini-1.0-pro',
+      'gemini-pro'
+    ];
 
     // 대화 히스토리 배열 (AI에게 전달할 이전 대화 내용 저장)
     let conversationHistory = [];
@@ -853,12 +867,64 @@
       return localStorage.getItem('gemini_api_key');
     }
 
+    /**
+     * API 키로 사용 가능한 모델을 자동으로 찾는 함수
+     * ListModels API를 호출해 실제 지원 모델 중 하나를 선택
+     * @param {string} apiKey - 확인할 API 키
+     * @returns {Promise<string|null>} 사용 가능한 모델명 또는 null
+     */
+    async function detectModel(apiKey) {
+      // v1과 v1beta 둘 다 시도
+      for (const ver of ['v1', 'v1beta']) {
+        try {
+          const res = await fetch(`${API_BASE}/${ver}/models?key=${apiKey}`);
+          if (!res.ok) continue;
+          const data = await res.json();
+          // generateContent를 지원하는 모델 필터링
+          const available = (data.models || [])
+            .filter(m => (m.supportedGenerationMethods || []).includes('generateContent'))
+            .map(m => m.name.replace('models/', ''));
+
+          // 선호 순서대로 매칭
+          for (const candidate of CANDIDATE_MODELS) {
+            if (available.includes(candidate)) {
+              // 버전도 함께 저장
+              localStorage.setItem('gemini_api_version', ver);
+              return candidate;
+            }
+          }
+          // 선호 목록에 없으면 첫 번째 사용 가능 모델 반환
+          if (available.length > 0) {
+            localStorage.setItem('gemini_api_version', ver);
+            return available[0];
+          }
+        } catch (e) { /* 해당 버전 실패 시 다음 시도 */ }
+      }
+      return null;
+    }
+
     // API 키 저장 버튼 클릭 이벤트
-    saveApiKeyBtn.addEventListener('click', function () {
+    saveApiKeyBtn.addEventListener('click', async function () {
       const apiKey = apiKeyInput.value;
-      if (saveApiKey(apiKey)) {
-        // 저장 성공 시 채팅 화면으로 이동
+      if (!saveApiKey(apiKey)) return;
+
+      // 버튼 로딩 상태
+      saveApiKeyBtn.textContent = '⏳ 모델 확인 중...';
+      saveApiKeyBtn.disabled = true;
+
+      // 사용 가능한 모델 자동 감지
+      const detected = await detectModel(apiKey.trim());
+
+      saveApiKeyBtn.textContent = '시작하기 ✨';
+      saveApiKeyBtn.disabled = false;
+
+      if (detected) {
+        // 감지된 모델 저장
+        currentModel = detected;
+        localStorage.setItem('gemini_model', detected);
         showChatScreen();
+      } else {
+        alert('API 키로 사용 가능한 모델을 찾지 못했습니다.\nAPI 키가 올바른지 확인해주세요.');
       }
     });
 
@@ -1032,8 +1098,13 @@
         parts: [{ text: userMessage }]
       });
 
+      // 감지된 모델과 버전으로 엔드포인트 구성
+      const ver = localStorage.getItem('gemini_api_version') || 'v1';
+      const model = currentModel || localStorage.getItem('gemini_model') || 'gemini-1.5-flash';
+      const endpoint = `${API_BASE}/${ver}/models/${model}:generateContent`;
+
       // API 요청 보내기
-      const response = await fetch(`${API_ENDPOINT}?key=${apiKey}`, {
+      const response = await fetch(`${endpoint}?key=${apiKey}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
