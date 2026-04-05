@@ -732,8 +732,17 @@
     // 현재 사용할 모델명 (자동 감지됨)
     let currentModel = localStorage.getItem('gemini_model') || '';
 
-    // 시도할 모델 목록 (순서대로 시도)
+    // 시도할 모델 목록 (순서대로 시도 - Gemini 3 Flash 우선)
     const CANDIDATE_MODELS = [
+      'gemini-3.0-flash',
+      'gemini-3-flash',
+      'gemini-3.0-flash-preview',
+      'gemini-3-flash-preview',
+      'gemini-3.0-flash-001',
+      'gemini-2.5-flash',
+      'gemini-2.5-flash-preview',
+      'gemini-2.0-flash',
+      'gemini-2.0-flash-preview',
       'gemini-1.5-flash',
       'gemini-1.5-flash-latest',
       'gemini-1.5-flash-001',
