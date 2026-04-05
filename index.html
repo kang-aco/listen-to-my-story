@@ -625,6 +625,14 @@
     <!-- API 키 저장 버튼 -->
     <button id="save-api-key-btn">시작하기 ✨</button>
 
+    <!-- 사용 가능한 모델 확인 버튼 -->
+    <button id="list-models-btn" style="width:100%;margin-top:10px;padding:10px;background:#f5f5f5;border:1px solid #ddd;border-radius:12px;font-size:13px;cursor:pointer;color:#546e7a;">
+      🔍 내 API 키로 사용 가능한 모델 확인
+    </button>
+
+    <!-- 모델 목록 표시 영역 -->
+    <div id="models-list" style="display:none;margin-top:12px;text-align:left;background:#f8f9ff;border-radius:10px;padding:12px;font-size:12px;color:#37474f;max-height:180px;overflow-y:auto;"></div>
+
     <!-- API 키 발급 안내 -->
     <p class="api-help-text">
       API 키가 없으신가요?
@@ -1232,7 +1240,59 @@
     });
 
     // -----------------------------------------------
-    // 11. 페이지 로드 완료 시 초기화 실행
+    // 11. 사용 가능한 모델 목록 조회
+    // -----------------------------------------------
+
+    const listModelsBtn = document.getElementById('list-models-btn');
+    const modelsList = document.getElementById('models-list');
+
+    listModelsBtn.addEventListener('click', async function () {
+      // 입력창에서 API 키 가져오기 (아직 저장 전일 수도 있음)
+      const key = apiKeyInput.value.trim() || getApiKey();
+      if (!key) {
+        alert('먼저 API 키를 입력해주세요.');
+        return;
+      }
+
+      listModelsBtn.textContent = '⏳ 조회 중...';
+      listModelsBtn.disabled = true;
+      modelsList.style.display = 'none';
+
+      try {
+        // ListModels API 호출 (v1과 v1beta 둘 다 시도)
+        const resV1 = await fetch(`https://generativelanguage.googleapis.com/v1/models?key=${key}`);
+        const dataV1 = await resV1.json();
+
+        // generateContent를 지원하는 모델만 필터링
+        const models = (dataV1.models || []).filter(m =>
+          m.supportedGenerationMethods && m.supportedGenerationMethods.includes('generateContent')
+        );
+
+        if (models.length === 0) {
+          modelsList.innerHTML = '<b>⚠️ 사용 가능한 모델이 없습니다.</b><br>API 키를 확인해주세요.';
+        } else {
+          // 모델 목록 표시
+          modelsList.innerHTML = '<b>✅ 사용 가능한 모델 목록:</b><br><br>' +
+            models.map(m => `• <code>${m.name.replace('models/', '')}</code>`).join('<br>');
+
+          // 첫 번째 모델을 자동으로 설정에 반영
+          const firstModel = models[0].name.replace('models/', '');
+          modelsList.innerHTML += `<br><br><small style="color:#7986cb">👆 위 모델 이름을 아래에 알려주시면 자동으로 설정해드릴게요!</small>`;
+        }
+
+        modelsList.style.display = 'block';
+
+      } catch (e) {
+        modelsList.innerHTML = '❌ 조회 실패: ' + e.message;
+        modelsList.style.display = 'block';
+      }
+
+      listModelsBtn.textContent = '🔍 내 API 키로 사용 가능한 모델 확인';
+      listModelsBtn.disabled = false;
+    });
+
+    // -----------------------------------------------
+    // 12. 페이지 로드 완료 시 초기화 실행
     // -----------------------------------------------
 
     // 페이지가 완전히 로드된 후 초기화 함수 실행
