@@ -726,7 +726,8 @@
     // AI 응답을 기다리는 중인지 여부 (중복 전송 방지)
     let isLoading = false;
 
-    // AI 상담사 시스템 프롬프트 (AI의 역할 설정)
+    // AI 상담사 시스템 프롬프트 (대화 첫 메시지로 역할 설정)
+    // v1 API는 systemInstruction을 지원하지 않으므로 첫 대화 턴으로 삽입
     const SYSTEM_PROMPT = `당신은 따뜻하고 공감능력이 뛰어난 심리 상담사입니다.
 24시간 언제든지 사용자의 이야기를 들어주고,
 감정을 이해하며, 심리적 지지를 제공합니다.
@@ -734,6 +735,12 @@
 판단하지 않고, 공감하며, 사용자가 자신의 감정을
 안전하게 표현할 수 있는 공간을 만들어주세요.
 필요한 경우 전문적인 도움을 받을 것을 권유하세요.`;
+
+    // 시스템 프롬프트를 대화 히스토리 맨 앞에 삽입 (user/model 쌍으로 역할 부여)
+    const SYSTEM_HISTORY = [
+      { role: 'user', parts: [{ text: SYSTEM_PROMPT }] },
+      { role: 'model', parts: [{ text: '네, 저는 따뜻한 심리 상담사로서 당신의 이야기를 들어드릴게요. 언제든지 편하게 이야기해 주세요.' }] }
+    ];
 
     // -----------------------------------------------
     // 2. HTML 요소 가져오기
@@ -1024,13 +1031,8 @@
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          // 전체 대화 히스토리 전달 (맥락 유지)
-          contents: conversationHistory,
-
-          // 시스템 프롬프트 (AI의 역할 정의)
-          systemInstruction: {
-            parts: [{ text: SYSTEM_PROMPT }]
-          },
+          // 시스템 프롬프트(역할 설정) + 실제 대화 히스토리를 합쳐서 전달
+          contents: [...SYSTEM_HISTORY, ...conversationHistory],
 
           // AI 응답 설정
           generationConfig: {
