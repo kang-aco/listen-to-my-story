@@ -4,11 +4,11 @@
  *
  * Typecast TTS 프록시
  * 환경변수 TYPECAST_API_KEY 필요
+ * 현재 403 auth/not-authorized 상태 (Typecast 플랜 확인 필요)
  */
 
 const TYPECAST_BASE = 'https://typecast.ai';
 const ACTOR_ID = 'tc_6809c111e5e8c73f8a0237b2';
-const ACTOR_ID_HEX = '6809c111e5e8c73f8a0237b2'; // tc_ 없는 버전
 
 export async function onRequest(context) {
   const { request, env } = context;
@@ -45,53 +45,36 @@ export async function onRequest(context) {
     return json({ error: 'text is required' }, 400);
   }
 
-  // 1단계: 여러 조합으로 순서대로 시도
-  const attempts = [
-    { voice_id: ACTOR_ID,     lang: 'ko', xapi_hd: true,  model_version: 'latest' },
-    { voice_id: ACTOR_ID,     lang: 'ko' },
-    { actor_id: ACTOR_ID,     lang: 'ko', xapi_hd: true,  model_version: 'latest' },
-    { actor_id: ACTOR_ID,     lang: 'ko' },
-    { speaker_id: ACTOR_ID,   lang: 'ko', xapi_hd: true,  model_version: 'latest' },
-    { actor_id: ACTOR_ID_HEX, lang: 'ko', xapi_hd: true,  model_version: 'latest' },
-  ];
-
-  let speakRes, usedBody;
-  for (const params of attempts) {
-    try {
-      speakRes = await fetch(`${TYPECAST_BASE}/api/speak`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`
-        },
-        body: JSON.stringify({ text, ...params })
-      });
-      usedBody = params;
-      if (speakRes.ok) break; // 성공 시 중단
-      const errTxt = await speakRes.text().catch(() => '');
-      console.error('[speak] attempt failed', speakRes.status, JSON.stringify(params), errTxt);
-      // 계속 다음 조합 시도
-    } catch (e) {
-      console.error('[speak] network error', e.message);
-    }
-  }
-
-  if (!speakRes || !speakRes.ok) {
-    const errBody = await speakRes?.text().catch(() => '') ?? '';
-    return json({ error: `All attempts failed. Last: ${speakRes?.status}`, detail: errBody, tried: attempts.length }, 200);
-  }
-  console.log('[speak] success with', JSON.stringify(usedBody));
-
-  let speakData;
+  // 음성 합성 요청
+  let speakRes;
   try {
-    speakData = await speakRes.json();
-  } catch {
-    return json({ error: 'Response parse error' }, 200);
+    speakRes = await fetch(`${TYPECAST_BASE}/api/speak`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        actor_id: ACTOR_ID,
+        text,
+        lang: 'ko',
+        xapi_hd: true,
+        model_version: 'latest'
+      })
+    });
+  } catch (e) {
+    return json({ error: `Network error: ${e.message}` }, 502);
   }
 
+  if (!speakRes.ok) {
+    const errBody = await speakRes.text().catch(() => '');
+    console.error('[speak] Typecast error', speakRes.status, errBody);
+    return json({ error: `Typecast error: ${speakRes.status}`, detail: errBody }, 200);
+  }
+
+  const speakData = await speakRes.json().catch(() => null);
   const speakV2Url = speakData?.result?.speak_v2_url;
   if (!speakV2Url) {
-    console.error('[speak] No speak_v2_url:', JSON.stringify(speakData));
     return json({ error: 'No speak_v2_url', detail: JSON.stringify(speakData) }, 200);
   }
 
@@ -99,42 +82,26 @@ export async function onRequest(context) {
     ? speakV2Url
     : `${TYPECAST_BASE}${speakV2Url}`;
 
-  // 2단계: 완료될 때까지 폴링 (최대 30초)
+  // 폴링 (최대 30초)
   for (let i = 0; i < 30; i++) {
     await sleep(1000);
 
-    let pollRes;
-    try {
-      pollRes = await fetch(pollUrl, {
-        headers: { 'Authorization': `Bearer ${apiKey}` }
-      });
-    } catch (e) {
-      return json({ error: `Poll network error: ${e.message}` }, 200);
-    }
+    const pollRes = await fetch(pollUrl, {
+      headers: { 'Authorization': `Bearer ${apiKey}` }
+    }).catch(() => null);
 
-    if (!pollRes.ok) {
-      return json({ error: `Poll failed: ${pollRes.status}` }, 200);
-    }
+    if (!pollRes?.ok) continue;
 
-    let pollData;
-    try {
-      pollData = await pollRes.json();
-    } catch {
-      return json({ error: 'Poll parse error' }, 200);
-    }
-
+    const pollData = await pollRes.json().catch(() => null);
     const status = pollData?.result?.status;
 
     if (status === 'done') {
       const audioUrl = pollData?.result?.audio_download_url;
-      if (!audioUrl) {
-        return json({ error: 'No audio_download_url', detail: JSON.stringify(pollData) }, 200);
-      }
+      if (!audioUrl) return json({ error: 'No audio_download_url' }, 200);
       return json({ audioUrl });
     }
-
     if (status === 'error') {
-      return json({ error: 'Synthesis error', detail: JSON.stringify(pollData) }, 200);
+      return json({ error: 'Synthesis failed' }, 200);
     }
   }
 
