@@ -758,14 +758,6 @@
       autocomplete="off"
     />
 
-    <!-- Typecast API 키 입력창 -->
-    <input
-      type="password"
-      id="typecast-key-input"
-      placeholder="Typecast API 키를 입력하세요 (음성 출력용, 선택)"
-      autocomplete="off"
-      style="margin-top:8px;"
-    />
 
     <!-- API 키 저장 버튼 -->
     <button id="save-api-key-btn">시작하기 ✨</button>
@@ -780,13 +772,9 @@
 
     <!-- API 키 발급 안내 -->
     <p class="api-help-text">
-      Gemini 키:
+      API 키가 없으신가요?
       <a href="https://aistudio.google.com/app/apikey" target="_blank">
-        Google AI Studio에서 무료 발급
-      </a>
-      &nbsp;|&nbsp; Typecast 키:
-      <a href="https://typecast.ai" target="_blank">
-        typecast.ai에서 발급
+        Google AI Studio에서 무료로 발급받기
       </a>
     </p>
   </div>
@@ -870,15 +858,6 @@
         autocomplete="off"
       />
 
-      <!-- 새 Typecast API 키 입력창 -->
-      <input
-        type="password"
-        class="modal-input"
-        id="new-typecast-key-input"
-        placeholder="새 Typecast API 키 입력 (음성 출력용, 선택)"
-        autocomplete="off"
-        style="margin-top:8px;"
-      />
 
       <!-- 모달 버튼들 -->
       <div class="modal-buttons">
@@ -955,7 +934,6 @@
 
     // API 키 입력 관련 요소들
     const apiKeyInput = document.getElementById('api-key-input');
-    const typecastKeyInput = document.getElementById('typecast-key-input');
     const saveApiKeyBtn = document.getElementById('save-api-key-btn');
 
     // 채팅 관련 요소들
@@ -967,7 +945,6 @@
     const settingsBtn = document.getElementById('settings-btn');
     const settingsModal = document.getElementById('settings-modal');
     const newApiKeyInput = document.getElementById('new-api-key-input');
-    const newTypecastKeyInput = document.getElementById('new-typecast-key-input');
     const modalCancelBtn = document.getElementById('modal-cancel-btn');
     const modalSaveBtn = document.getElementById('modal-save-btn');
 
@@ -1072,24 +1049,7 @@
       return localStorage.getItem('gemini_api_key');
     }
 
-    /**
-     * Typecast API 키를 localStorage에 저장
-     * @param {string} key - Typecast API 키
-     */
-    function saveTypeCastKey(key) {
-      const trimmed = key.trim();
-      if (trimmed) localStorage.setItem('typecast_api_key', trimmed);
-    }
-
-    /**
-     * localStorage에서 Typecast API 키 가져오기
-     * @returns {string|null}
-     */
-    function getTypeCastKey() {
-      return localStorage.getItem('typecast_api_key');
-    }
-
-    /**
+/**
      * API 키로 사용 가능한 모델을 자동으로 찾는 함수
      * ListModels API를 호출해 실제 지원 모델 중 하나를 선택
      * @param {string} apiKey - 확인할 API 키
@@ -1129,9 +1089,6 @@
     saveApiKeyBtn.addEventListener('click', async function () {
       const apiKey = apiKeyInput.value;
       if (!saveApiKey(apiKey)) return;
-
-      // Typecast 키도 저장 (선택)
-      saveTypeCastKey(typecastKeyInput.value);
 
       // 버튼 로딩 상태
       saveApiKeyBtn.textContent = '⏳ 모델 확인 중...';
@@ -1515,18 +1472,13 @@
     // 새 API 키 저장 버튼 클릭
     modalSaveBtn.addEventListener('click', function () {
       const newKey = newApiKeyInput.value.trim();
-      const newTcKey = newTypecastKeyInput.value.trim();
-
-      if (!newKey && !newTcKey) {
-        alert('변경할 API 키를 입력해주세요.');
+      if (!newKey) {
+        alert('새 API 키를 입력해주세요.');
         return;
       }
 
       // 새 Gemini API 키 저장
-      if (newKey) localStorage.setItem('gemini_api_key', newKey);
-
-      // 새 Typecast API 키 저장
-      if (newTcKey) localStorage.setItem('typecast_api_key', newTcKey);
+      localStorage.setItem('gemini_api_key', newKey);
 
       // 모달 닫기
       settingsModal.style.display = 'none';
@@ -1713,8 +1665,8 @@
     let currentAudio = null;
 
     /**
-     * Typecast API로 텍스트를 음성으로 읽어주는 함수
-     * actor: tc_6809c111e5e8c73f8a0237b2 (여성 목소리)
+     * Typecast TTS (Cloudflare Function 프록시 경유)
+     * 실패 시 브라우저 기본 TTS로 폴백
      * @param {string} text - 읽어줄 텍스트
      */
     async function speakText(text) {
@@ -1726,75 +1678,23 @@
         currentAudio = null;
       }
 
-      const tcKey = getTypeCastKey();
-
-      // Typecast API 키가 없으면 브라우저 기본 TTS 사용
-      if (!tcKey) {
-        if (!window.speechSynthesis) return;
-        window.speechSynthesis.cancel();
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = 'ko-KR';
-        utterance.rate = 1.0;
-        utterance.pitch = 1.1;
-        window.speechSynthesis.speak(utterance);
-        return;
-      }
-
       try {
-        // 1단계: 음성 합성 요청
-        const res = await fetch('https://typecast.ai/api/speak', {
+        const res = await fetch('/api/speak', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${tcKey}`
-          },
-          body: JSON.stringify({
-            actor_id: 'tc_6809c111e5e8c73f8a0237b2',
-            text: text,
-            lang: 'auto',
-            xapi_hd: true,
-            model_version: 'latest'
-          })
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text })
         });
 
-        if (!res.ok) {
-          console.warn('Typecast API 오류:', res.status);
-          fallbackBrowserTTS(text);
-          return;
-        }
+        if (!res.ok) { fallbackBrowserTTS(text); return; }
 
         const data = await res.json();
-        const speakUrl = data?.result?.speak_v2_url;
-        if (!speakUrl) { fallbackBrowserTTS(text); return; }
+        if (!data.audioUrl) { fallbackBrowserTTS(text); return; }
 
-        // 2단계: 완료될 때까지 폴링 (최대 30초)
-        let audioUrl = null;
-        for (let i = 0; i < 30; i++) {
-          await new Promise(r => setTimeout(r, 1000));
-          const pollRes = await fetch(speakUrl, {
-            headers: { 'Authorization': `Bearer ${tcKey}` }
-          });
-          if (!pollRes.ok) break;
-          const pollData = await pollRes.json();
-          const status = pollData?.result?.status;
-          if (status === 'done') {
-            audioUrl = pollData?.result?.audio_download_url;
-            break;
-          }
-          if (status === 'error') break;
-        }
-
-        if (!audioUrl) { fallbackBrowserTTS(text); return; }
-
-        // 3단계: 오디오 재생
         if (!isTtsEnabled) return;
-        currentAudio = new Audio(audioUrl);
-        currentAudio.play().catch(e => {
-          console.warn('오디오 재생 실패:', e);
-          fallbackBrowserTTS(text);
-        });
+        currentAudio = new Audio(data.audioUrl);
+        currentAudio.play().catch(() => fallbackBrowserTTS(text));
       } catch (e) {
-        console.warn('Typecast TTS 실패 (CORS 또는 네트워크 오류):', e);
+        console.warn('TTS 실패:', e);
         fallbackBrowserTTS(text);
       }
     }
