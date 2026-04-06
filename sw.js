@@ -1,4 +1,4 @@
-const CACHE_NAME = 'listen-to-my-story-v2';
+const CACHE_NAME = 'listen-to-my-story-v3';
 const ASSETS = [
   './',
   './index.html',

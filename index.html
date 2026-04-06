@@ -1759,12 +1759,13 @@
 
         if (!res.ok) {
           console.warn('Typecast API 오류:', res.status);
+          fallbackBrowserTTS(text);
           return;
         }
 
         const data = await res.json();
         const speakUrl = data?.result?.speak_v2_url;
-        if (!speakUrl) return;
+        if (!speakUrl) { fallbackBrowserTTS(text); return; }
 
         // 2단계: 완료될 때까지 폴링 (최대 30초)
         let audioUrl = null;
@@ -1783,15 +1784,30 @@
           if (status === 'error') break;
         }
 
-        if (!audioUrl) return;
+        if (!audioUrl) { fallbackBrowserTTS(text); return; }
 
         // 3단계: 오디오 재생
-        if (!isTtsEnabled) return; // 재생 전 다시 확인
+        if (!isTtsEnabled) return;
         currentAudio = new Audio(audioUrl);
-        currentAudio.play().catch(e => console.warn('오디오 재생 실패:', e));
+        currentAudio.play().catch(e => {
+          console.warn('오디오 재생 실패:', e);
+          fallbackBrowserTTS(text);
+        });
       } catch (e) {
-        console.warn('Typecast TTS 실패:', e);
+        console.warn('Typecast TTS 실패 (CORS 또는 네트워크 오류):', e);
+        fallbackBrowserTTS(text);
       }
+    }
+
+    /** Typecast 실패 시 브라우저 기본 TTS로 폴백 */
+    function fallbackBrowserTTS(text) {
+      if (!isTtsEnabled || !window.speechSynthesis) return;
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'ko-KR';
+      utterance.rate = 1.0;
+      utterance.pitch = 1.1;
+      window.speechSynthesis.speak(utterance);
     }
 
     // -----------------------------------------------
