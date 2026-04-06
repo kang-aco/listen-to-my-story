@@ -38,94 +38,6 @@
     }
 
     /* ===========================
-       API 키 입력 화면 스타일
-    =========================== */
-
-    /* API 키 입력 화면 - 처음 접속 시 보이는 화면 */
-    #api-key-screen {
-      background: white;
-      border-radius: 24px;
-      padding: 48px 40px;
-      width: 90%;
-      max-width: 440px;
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.12);
-      text-align: center;
-      animation: fadeIn 0.5s ease;
-    }
-
-    /* API 키 화면의 이모지 아이콘 */
-    .api-screen-icon {
-      font-size: 56px;
-      margin-bottom: 16px;
-    }
-
-    /* API 키 화면 제목 */
-    .api-screen-title {
-      font-size: 24px;
-      font-weight: 700;
-      color: #5c6bc0;
-      margin-bottom: 8px;
-    }
-
-    /* API 키 화면 설명 텍스트 */
-    .api-screen-desc {
-      font-size: 14px;
-      color: #90a4ae;
-      margin-bottom: 32px;
-      line-height: 1.6;
-    }
-
-    /* API 키 입력창 */
-    #api-key-input {
-      width: 100%;
-      padding: 14px 16px;
-      border: 2px solid #e3f2fd;
-      border-radius: 12px;
-      font-size: 14px;
-      color: #37474f;
-      outline: none;
-      transition: border-color 0.3s ease;
-      margin-bottom: 16px;
-    }
-
-    /* 입력창 포커스 시 테두리 색 변경 */
-    #api-key-input:focus {
-      border-color: #7986cb;
-    }
-
-    /* API 키 저장 버튼 */
-    #save-api-key-btn {
-      width: 100%;
-      padding: 14px;
-      background: linear-gradient(135deg, #7986cb, #64b5f6);
-      color: white;
-      border: none;
-      border-radius: 12px;
-      font-size: 16px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
-    }
-
-    /* 버튼 호버 효과 */
-    #save-api-key-btn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 20px rgba(121, 134, 203, 0.4);
-    }
-
-    /* API 키 안내 링크 텍스트 */
-    .api-help-text {
-      margin-top: 20px;
-      font-size: 12px;
-      color: #b0bec5;
-    }
-
-    .api-help-text a {
-      color: #7986cb;
-      text-decoration: none;
-    }
-
-    /* ===========================
        채팅 화면 스타일
     =========================== */
 
@@ -736,50 +648,6 @@
   </div>
 
   <!-- ===========================
-       API 키 입력 화면
-       처음 방문 시 또는 API 키가 없을 때 표시
-  =========================== -->
-  <div id="api-key-screen">
-    <!-- 상단 아이콘 -->
-    <div class="api-screen-icon">💙</div>
-
-    <!-- 제목과 설명 -->
-    <h1 class="api-screen-title">내 이야기를 들어줘!</h1>
-    <p class="api-screen-desc">
-      24시간 언제든지 당신의 이야기를 들어드립니다.<br />
-      시작하려면 아래 API 키를 입력해주세요.
-    </p>
-
-    <!-- Gemini API 키 입력창 -->
-    <input
-      type="password"
-      id="api-key-input"
-      placeholder="Gemini API 키를 입력하세요"
-      autocomplete="off"
-    />
-
-
-    <!-- API 키 저장 버튼 -->
-    <button id="save-api-key-btn">시작하기 ✨</button>
-
-    <!-- 사용 가능한 모델 확인 버튼 -->
-    <button id="list-models-btn" style="width:100%;margin-top:10px;padding:10px;background:#f5f5f5;border:1px solid #ddd;border-radius:12px;font-size:13px;cursor:pointer;color:#546e7a;">
-      🔍 내 API 키로 사용 가능한 모델 확인
-    </button>
-
-    <!-- 모델 목록 표시 영역 -->
-    <div id="models-list" style="display:none;margin-top:12px;text-align:left;background:#f8f9ff;border-radius:10px;padding:12px;font-size:12px;color:#37474f;max-height:180px;overflow-y:auto;"></div>
-
-    <!-- API 키 발급 안내 -->
-    <p class="api-help-text">
-      API 키가 없으신가요?
-      <a href="https://aistudio.google.com/app/apikey" target="_blank">
-        Google AI Studio에서 무료로 발급받기
-      </a>
-    </p>
-  </div>
-
-  <!-- ===========================
        채팅 화면
        API 키 저장 후 표시
   =========================== -->
@@ -803,10 +671,6 @@
           🔊
         </button>
 
-        <!-- 설정(API 키 변경) 버튼 -->
-        <button class="header-settings-btn" id="settings-btn" title="API 키 변경">
-          ⚙️
-        </button>
       </div>
     </div>
 
@@ -841,31 +705,6 @@
     </div>
   </div>
 
-  <!-- ===========================
-       설정 모달 (API 키 변경)
-  =========================== -->
-  <div class="modal-overlay" id="settings-modal">
-    <div class="modal-box">
-      <h2 class="modal-title">⚙️ API 키 변경</h2>
-      <p class="modal-desc">새로운 API 키를 입력하세요.</p>
-
-      <!-- 새 Gemini API 키 입력창 -->
-      <input
-        type="password"
-        class="modal-input"
-        id="new-api-key-input"
-        placeholder="새 Gemini API 키 입력"
-        autocomplete="off"
-      />
-
-
-      <!-- 모달 버튼들 -->
-      <div class="modal-buttons">
-        <button class="modal-cancel-btn" id="modal-cancel-btn">취소</button>
-        <button class="modal-save-btn" id="modal-save-btn">저장</button>
-      </div>
-    </div>
-  </div>
 
   <script>
     /* ===========================
@@ -876,31 +715,6 @@
     // 1. 전역 변수 선언
     // -----------------------------------------------
 
-    // Gemini API를 사용하기 위한 엔드포인트 주소
-    // API 기본 주소 (모델명은 자동 감지 후 동적으로 설정)
-    const API_BASE = 'https://generativelanguage.googleapis.com';
-
-    // 현재 사용할 모델명 (자동 감지됨)
-    let currentModel = localStorage.getItem('gemini_model') || '';
-
-    // 시도할 모델 목록 (순서대로 시도 - Gemini 3 Flash 우선)
-    const CANDIDATE_MODELS = [
-      'gemini-3.0-flash',
-      'gemini-3-flash',
-      'gemini-3.0-flash-preview',
-      'gemini-3-flash-preview',
-      'gemini-3.0-flash-001',
-      'gemini-2.5-flash',
-      'gemini-2.5-flash-preview',
-      'gemini-2.0-flash',
-      'gemini-2.0-flash-preview',
-      'gemini-1.5-flash',
-      'gemini-1.5-flash-latest',
-      'gemini-1.5-flash-001',
-      'gemini-1.5-pro',
-      'gemini-1.0-pro',
-      'gemini-pro'
-    ];
 
     // 대화 히스토리 배열 (AI에게 전달할 이전 대화 내용 저장)
     let conversationHistory = [];
@@ -928,25 +742,15 @@
     // 2. HTML 요소 가져오기
     // -----------------------------------------------
 
-    // 각 화면 요소 참조
-    const apiKeyScreen = document.getElementById('api-key-screen');
+    // 채팅 화면 요소 참조
     const chatScreen = document.getElementById('chat-screen');
-
-    // API 키 입력 관련 요소들
-    const apiKeyInput = document.getElementById('api-key-input');
-    const saveApiKeyBtn = document.getElementById('save-api-key-btn');
 
     // 채팅 관련 요소들
     const messagesContainer = document.getElementById('messages-container');
     const messageInput = document.getElementById('message-input');
     const sendBtn = document.getElementById('send-btn');
 
-    // 설정 모달 관련 요소들
-    const settingsBtn = document.getElementById('settings-btn');
-    const settingsModal = document.getElementById('settings-modal');
-    const newApiKeyInput = document.getElementById('new-api-key-input');
-    const modalCancelBtn = document.getElementById('modal-cancel-btn');
-    const modalSaveBtn = document.getElementById('modal-save-btn');
+
 
     // 음성 기능 관련 요소들
     const micBtn = document.getElementById('mic-btn');           // 마이크 버튼
@@ -958,37 +762,9 @@
 
     /**
      * 페이지 시작 시 실행되는 초기화 함수
-     * localStorage에 API 키가 있으면 채팅 화면으로, 없으면 API 키 입력 화면으로 이동
      */
-    async function init() {
-      // 이전에 캐시된 모델 정보 초기화 (항상 재감지)
-      localStorage.removeItem('gemini_model');
-      localStorage.removeItem('gemini_api_version');
-      currentModel = '';
-
-      // localStorage에서 저장된 API 키 가져오기
-      const savedApiKey = localStorage.getItem('gemini_api_key');
-
-      if (savedApiKey) {
-        // 저장된 API 키로 사용 가능한 모델 자동 감지
-        saveApiKeyBtn.textContent = '⏳ 모델 감지 중...';
-        const detected = await detectModel(savedApiKey);
-        saveApiKeyBtn.textContent = '시작하기 ✨';
-
-        if (detected) {
-          currentModel = detected;
-          localStorage.setItem('gemini_model', detected);
-          showChatScreen();
-        } else {
-          // 모델 감지 실패 시 API 키 입력 화면으로
-          localStorage.removeItem('gemini_api_key');
-          showApiKeyScreen();
-          alert('저장된 API 키로 모델을 찾을 수 없습니다. API 키를 다시 입력해주세요.');
-        }
-      } else {
-        // API 키가 없으면 API 키 입력 화면 표시
-        showApiKeyScreen();
-      }
+    function init() {
+      showChatScreen();
     }
 
     // -----------------------------------------------
@@ -996,20 +772,9 @@
     // -----------------------------------------------
 
     /**
-     * API 키 입력 화면 표시
-     */
-    function showApiKeyScreen() {
-      apiKeyScreen.style.display = 'block';
-      chatScreen.style.display = 'none';
-      // 입력창 초기화
-      apiKeyInput.value = '';
-    }
-
-    /**
      * 채팅 화면 표시 및 초기화
      */
     function showChatScreen() {
-      apiKeyScreen.style.display = 'none';
       // 채팅 화면을 flex로 표시 (flex-direction: column 레이아웃 사용)
       chatScreen.style.display = 'flex';
 
@@ -1022,100 +787,6 @@
     // -----------------------------------------------
     // 5. API 키 저장 처리
     // -----------------------------------------------
-
-    /**
-     * API 키를 localStorage에 저장하는 함수
-     * @param {string} apiKey - 저장할 API 키
-     * @returns {boolean} 저장 성공 여부
-     */
-    function saveApiKey(apiKey) {
-      // API 키가 비어있는지 확인
-      const trimmedKey = apiKey.trim();
-      if (!trimmedKey) {
-        alert('Gemini API 키를 입력해주세요.');
-        return false;
-      }
-
-      // localStorage에 API 키 저장
-      localStorage.setItem('gemini_api_key', trimmedKey);
-      return true;
-    }
-
-    /**
-     * localStorage에서 Gemini API 키 가져오기
-     * @returns {string|null} 저장된 API 키 또는 null
-     */
-    function getApiKey() {
-      return localStorage.getItem('gemini_api_key');
-    }
-
-/**
-     * API 키로 사용 가능한 모델을 자동으로 찾는 함수
-     * ListModels API를 호출해 실제 지원 모델 중 하나를 선택
-     * @param {string} apiKey - 확인할 API 키
-     * @returns {Promise<string|null>} 사용 가능한 모델명 또는 null
-     */
-    async function detectModel(apiKey) {
-      // v1과 v1beta 둘 다 시도
-      for (const ver of ['v1', 'v1beta']) {
-        try {
-          const res = await fetch(`${API_BASE}/${ver}/models?key=${apiKey}`);
-          if (!res.ok) continue;
-          const data = await res.json();
-          // generateContent를 지원하는 모델 필터링
-          const available = (data.models || [])
-            .filter(m => (m.supportedGenerationMethods || []).includes('generateContent'))
-            .map(m => m.name.replace('models/', ''));
-
-          // 선호 순서대로 매칭
-          for (const candidate of CANDIDATE_MODELS) {
-            if (available.includes(candidate)) {
-              // 버전도 함께 저장
-              localStorage.setItem('gemini_api_version', ver);
-              return candidate;
-            }
-          }
-          // 선호 목록에 없으면 첫 번째 사용 가능 모델 반환
-          if (available.length > 0) {
-            localStorage.setItem('gemini_api_version', ver);
-            return available[0];
-          }
-        } catch (e) { /* 해당 버전 실패 시 다음 시도 */ }
-      }
-      return null;
-    }
-
-    // API 키 저장 버튼 클릭 이벤트
-    saveApiKeyBtn.addEventListener('click', async function () {
-      const apiKey = apiKeyInput.value;
-      if (!saveApiKey(apiKey)) return;
-
-      // 버튼 로딩 상태
-      saveApiKeyBtn.textContent = '⏳ 모델 확인 중...';
-      saveApiKeyBtn.disabled = true;
-
-      // 사용 가능한 모델 자동 감지
-      const detected = await detectModel(apiKey.trim());
-
-      saveApiKeyBtn.textContent = '시작하기 ✨';
-      saveApiKeyBtn.disabled = false;
-
-      if (detected) {
-        // 감지된 모델 저장
-        currentModel = detected;
-        localStorage.setItem('gemini_model', detected);
-        showChatScreen();
-      } else {
-        alert('API 키로 사용 가능한 모델을 찾지 못했습니다.\nAPI 키가 올바른지 확인해주세요.');
-      }
-    });
-
-    // API 키 입력창에서 Enter 키 눌렀을 때 저장
-    apiKeyInput.addEventListener('keypress', function (e) {
-      if (e.key === 'Enter') {
-        saveApiKeyBtn.click();
-      }
-    });
 
     // -----------------------------------------------
     // 6. 메시지 표시 함수들
@@ -1271,22 +942,14 @@
      * @returns {Promise<string>} AI의 응답 텍스트
      */
     async function callGeminiAPI(userMessage) {
-      // localStorage에서 API 키 가져오기
-      const apiKey = getApiKey();
-
       // 사용자 메시지를 대화 히스토리에 추가
       conversationHistory.push({
         role: 'user',
         parts: [{ text: userMessage }]
       });
 
-      // 감지된 모델과 버전으로 엔드포인트 구성
-      const ver = localStorage.getItem('gemini_api_version') || 'v1';
-      const model = currentModel || localStorage.getItem('gemini_model') || 'gemini-1.5-flash';
-      const endpoint = `${API_BASE}/${ver}/models/${model}:generateContent`;
-
-      // API 요청 보내기
-      const response = await fetch(`${endpoint}?key=${apiKey}`, {
+      // 서버 프록시(/api/chat)를 통해 Gemini API 호출
+      const response = await fetch('/api/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -1297,29 +960,21 @@
 
           // AI 응답 설정
           generationConfig: {
-            temperature: 0.9,       // 창의성 수준 (0~1, 높을수록 다양한 응답)
-            maxOutputTokens: 1000   // 최대 응답 길이
+            temperature: 0.9,
+            maxOutputTokens: 1000
           }
         })
       });
 
       // 응답이 실패한 경우 에러 처리
       if (!response.ok) {
-        // 오류 응답 본문에서 상세 메시지 추출 시도
         let errorDetail = '';
         try {
           const errJson = await response.json();
-          errorDetail = errJson?.error?.message || '';
+          errorDetail = errJson?.error?.message || errJson?.error || '';
         } catch (e) { /* 무시 */ }
 
-        // HTTP 상태 코드에 따른 에러 메시지
-        if (response.status === 400) {
-          throw new Error('API 키가 올바르지 않습니다. 설정에서 API 키를 확인해주세요.' + (errorDetail ? ` (${errorDetail})` : ''));
-        } else if (response.status === 403) {
-          throw new Error('API 키 권한이 없습니다. Google AI Studio에서 키를 다시 발급해주세요.' + (errorDetail ? ` (${errorDetail})` : ''));
-        } else if (response.status === 404) {
-          throw new Error('모델을 찾을 수 없습니다. API 키가 이 모델을 지원하는지 확인해주세요.' + (errorDetail ? ` (${errorDetail})` : ''));
-        } else if (response.status === 429) {
+        if (response.status === 429) {
           throw new Error('API 요청 한도를 초과했습니다. 잠시 후 다시 시도해주세요.');
         } else {
           throw new Error(`서버 오류가 발생했습니다. (오류 코드: ${response.status}${errorDetail ? ', ' + errorDetail : ''})`);
@@ -1446,108 +1101,7 @@
     });
 
     // -----------------------------------------------
-    // 10. 설정 모달 (API 키 변경) 처리
-    // -----------------------------------------------
-
-    // 설정 버튼 클릭 시 모달 열기
-    settingsBtn.addEventListener('click', function () {
-      settingsModal.style.display = 'flex';
-      newApiKeyInput.value = ''; // 입력창 초기화
-      newApiKeyInput.focus();
-    });
-
-    // 취소 버튼 클릭 시 모달 닫기
-    modalCancelBtn.addEventListener('click', function () {
-      settingsModal.style.display = 'none';
-    });
-
-    // 모달 배경 클릭 시 모달 닫기
-    settingsModal.addEventListener('click', function (e) {
-      // 클릭된 요소가 모달 오버레이 자체일 때만 닫기
-      if (e.target === settingsModal) {
-        settingsModal.style.display = 'none';
-      }
-    });
-
-    // 새 API 키 저장 버튼 클릭
-    modalSaveBtn.addEventListener('click', function () {
-      const newKey = newApiKeyInput.value.trim();
-      if (!newKey) {
-        alert('새 API 키를 입력해주세요.');
-        return;
-      }
-
-      // 새 Gemini API 키 저장
-      localStorage.setItem('gemini_api_key', newKey);
-
-      // 모달 닫기
-      settingsModal.style.display = 'none';
-
-      // 사용자에게 변경 완료 알림
-      addMessage('API 키가 변경되었습니다. 계속 대화를 이어가세요! 😊', 'ai');
-    });
-
-    // 모달 입력창에서 Enter 키 처리
-    newApiKeyInput.addEventListener('keypress', function (e) {
-      if (e.key === 'Enter') {
-        modalSaveBtn.click();
-      }
-    });
-
-    // -----------------------------------------------
-    // 11. 사용 가능한 모델 목록 조회
-    // -----------------------------------------------
-
-    const listModelsBtn = document.getElementById('list-models-btn');
-    const modelsList = document.getElementById('models-list');
-
-    listModelsBtn.addEventListener('click', async function () {
-      // 입력창에서 API 키 가져오기 (아직 저장 전일 수도 있음)
-      const key = apiKeyInput.value.trim() || getApiKey();
-      if (!key) {
-        alert('먼저 API 키를 입력해주세요.');
-        return;
-      }
-
-      listModelsBtn.textContent = '⏳ 조회 중...';
-      listModelsBtn.disabled = true;
-      modelsList.style.display = 'none';
-
-      try {
-        // ListModels API 호출 (v1과 v1beta 둘 다 시도)
-        const resV1 = await fetch(`https://generativelanguage.googleapis.com/v1/models?key=${key}`);
-        const dataV1 = await resV1.json();
-
-        // generateContent를 지원하는 모델만 필터링
-        const models = (dataV1.models || []).filter(m =>
-          m.supportedGenerationMethods && m.supportedGenerationMethods.includes('generateContent')
-        );
-
-        if (models.length === 0) {
-          modelsList.innerHTML = '<b>⚠️ 사용 가능한 모델이 없습니다.</b><br>API 키를 확인해주세요.';
-        } else {
-          // 모델 목록 표시
-          modelsList.innerHTML = '<b>✅ 사용 가능한 모델 목록:</b><br><br>' +
-            models.map(m => `• <code>${m.name.replace('models/', '')}</code>`).join('<br>');
-
-          // 첫 번째 모델을 자동으로 설정에 반영
-          const firstModel = models[0].name.replace('models/', '');
-          modelsList.innerHTML += `<br><br><small style="color:#7986cb">👆 위 모델 이름을 아래에 알려주시면 자동으로 설정해드릴게요!</small>`;
-        }
-
-        modelsList.style.display = 'block';
-
-      } catch (e) {
-        modelsList.innerHTML = '❌ 조회 실패: ' + e.message;
-        modelsList.style.display = 'block';
-      }
-
-      listModelsBtn.textContent = '🔍 내 API 키로 사용 가능한 모델 확인';
-      listModelsBtn.disabled = false;
-    });
-
-    // -----------------------------------------------
-    // 12. 음성 입력 (STT - Speech to Text) 설정
+    // 11. 음성 입력 (STT - Speech to Text) 설정
     // -----------------------------------------------
 
     // Web Speech API의 SpeechRecognition 객체 가져오기
