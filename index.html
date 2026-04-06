@@ -1239,10 +1239,19 @@
           body: JSON.stringify({ text })
         });
 
-        if (!res.ok) { fallbackBrowserTTS(text); return; }
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          console.warn('TTS /api/speak 오류:', res.status, errData);
+          fallbackBrowserTTS(text);
+          return;
+        }
 
         const data = await res.json();
-        if (!data.audioUrl) { fallbackBrowserTTS(text); return; }
+        if (!data.audioUrl) {
+          console.warn('TTS audioUrl 없음:', data);
+          fallbackBrowserTTS(text);
+          return;
+        }
 
         if (!isTtsEnabled) return;
         currentAudio = new Audio(data.audioUrl);
