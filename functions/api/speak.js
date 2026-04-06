@@ -8,6 +8,7 @@
 
 const TYPECAST_BASE = 'https://typecast.ai';
 const ACTOR_ID = 'tc_6809c111e5e8c73f8a0237b2';
+const ACTOR_ID_HEX = '6809c111e5e8c73f8a0237b2'; // tc_ 없는 버전
 
 export async function onRequest(context) {
   const { request, env } = context;
@@ -44,32 +45,42 @@ export async function onRequest(context) {
     return json({ error: 'text is required' }, 400);
   }
 
-  // 1단계: 음성 합성 요청
-  let speakRes;
-  try {
-    speakRes = await fetch(`${TYPECAST_BASE}/api/speak`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
-      },
-      body: JSON.stringify({
-        actor_id: ACTOR_ID,
-        text,
-        lang: 'ko',
-        xapi_hd: true,
-        model_version: 'latest'
-      })
-    });
-  } catch (e) {
-    return json({ error: `Network error: ${e.message}` }, 502);
+  // 1단계: 여러 조합으로 순서대로 시도
+  const attempts = [
+    { voice_id: ACTOR_ID,     lang: 'ko', xapi_hd: true,  model_version: 'latest' },
+    { voice_id: ACTOR_ID,     lang: 'ko' },
+    { actor_id: ACTOR_ID,     lang: 'ko', xapi_hd: true,  model_version: 'latest' },
+    { actor_id: ACTOR_ID,     lang: 'ko' },
+    { speaker_id: ACTOR_ID,   lang: 'ko', xapi_hd: true,  model_version: 'latest' },
+    { actor_id: ACTOR_ID_HEX, lang: 'ko', xapi_hd: true,  model_version: 'latest' },
+  ];
+
+  let speakRes, usedBody;
+  for (const params of attempts) {
+    try {
+      speakRes = await fetch(`${TYPECAST_BASE}/api/speak`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({ text, ...params })
+      });
+      usedBody = params;
+      if (speakRes.ok) break; // 성공 시 중단
+      const errTxt = await speakRes.text().catch(() => '');
+      console.error('[speak] attempt failed', speakRes.status, JSON.stringify(params), errTxt);
+      // 계속 다음 조합 시도
+    } catch (e) {
+      console.error('[speak] network error', e.message);
+    }
   }
 
-  if (!speakRes.ok) {
-    const errBody = await speakRes.text().catch(() => '');
-    console.error('[speak] Typecast error', speakRes.status, errBody);
-    return json({ error: `Typecast error: ${speakRes.status}`, detail: errBody }, 200);
+  if (!speakRes || !speakRes.ok) {
+    const errBody = await speakRes?.text().catch(() => '') ?? '';
+    return json({ error: `All attempts failed. Last: ${speakRes?.status}`, detail: errBody, tried: attempts.length }, 200);
   }
+  console.log('[speak] success with', JSON.stringify(usedBody));
 
   let speakData;
   try {
