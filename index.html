@@ -694,15 +694,24 @@
     <h1 class="api-screen-title">내 이야기를 들어줘!</h1>
     <p class="api-screen-desc">
       24시간 언제든지 당신의 이야기를 들어드립니다.<br />
-      시작하려면 Gemini API 키를 입력해주세요.
+      시작하려면 아래 API 키를 입력해주세요.
     </p>
 
-    <!-- API 키 입력창 -->
+    <!-- Gemini API 키 입력창 -->
     <input
       type="password"
       id="api-key-input"
       placeholder="Gemini API 키를 입력하세요"
       autocomplete="off"
+    />
+
+    <!-- Typecast API 키 입력창 -->
+    <input
+      type="password"
+      id="typecast-key-input"
+      placeholder="Typecast API 키를 입력하세요 (음성 출력용, 선택)"
+      autocomplete="off"
+      style="margin-top:8px;"
     />
 
     <!-- API 키 저장 버튼 -->
@@ -718,9 +727,13 @@
 
     <!-- API 키 발급 안내 -->
     <p class="api-help-text">
-      API 키가 없으신가요?
+      Gemini 키:
       <a href="https://aistudio.google.com/app/apikey" target="_blank">
-        Google AI Studio에서 무료로 발급받기
+        Google AI Studio에서 무료 발급
+      </a>
+      &nbsp;|&nbsp; Typecast 키:
+      <a href="https://typecast.ai" target="_blank">
+        typecast.ai에서 발급
       </a>
     </p>
   </div>
@@ -793,15 +806,25 @@
   <div class="modal-overlay" id="settings-modal">
     <div class="modal-box">
       <h2 class="modal-title">⚙️ API 키 변경</h2>
-      <p class="modal-desc">새로운 Gemini API 키를 입력하세요.</p>
+      <p class="modal-desc">새로운 API 키를 입력하세요.</p>
 
-      <!-- 새 API 키 입력창 -->
+      <!-- 새 Gemini API 키 입력창 -->
       <input
         type="password"
         class="modal-input"
         id="new-api-key-input"
-        placeholder="새 API 키 입력"
+        placeholder="새 Gemini API 키 입력"
         autocomplete="off"
+      />
+
+      <!-- 새 Typecast API 키 입력창 -->
+      <input
+        type="password"
+        class="modal-input"
+        id="new-typecast-key-input"
+        placeholder="새 Typecast API 키 입력 (음성 출력용, 선택)"
+        autocomplete="off"
+        style="margin-top:8px;"
       />
 
       <!-- 모달 버튼들 -->
@@ -879,6 +902,7 @@
 
     // API 키 입력 관련 요소들
     const apiKeyInput = document.getElementById('api-key-input');
+    const typecastKeyInput = document.getElementById('typecast-key-input');
     const saveApiKeyBtn = document.getElementById('save-api-key-btn');
 
     // 채팅 관련 요소들
@@ -890,6 +914,7 @@
     const settingsBtn = document.getElementById('settings-btn');
     const settingsModal = document.getElementById('settings-modal');
     const newApiKeyInput = document.getElementById('new-api-key-input');
+    const newTypecastKeyInput = document.getElementById('new-typecast-key-input');
     const modalCancelBtn = document.getElementById('modal-cancel-btn');
     const modalSaveBtn = document.getElementById('modal-save-btn');
 
@@ -977,7 +1002,7 @@
       // API 키가 비어있는지 확인
       const trimmedKey = apiKey.trim();
       if (!trimmedKey) {
-        alert('API 키를 입력해주세요.');
+        alert('Gemini API 키를 입력해주세요.');
         return false;
       }
 
@@ -987,11 +1012,28 @@
     }
 
     /**
-     * localStorage에서 API 키 가져오기
+     * localStorage에서 Gemini API 키 가져오기
      * @returns {string|null} 저장된 API 키 또는 null
      */
     function getApiKey() {
       return localStorage.getItem('gemini_api_key');
+    }
+
+    /**
+     * Typecast API 키를 localStorage에 저장
+     * @param {string} key - Typecast API 키
+     */
+    function saveTypeCastKey(key) {
+      const trimmed = key.trim();
+      if (trimmed) localStorage.setItem('typecast_api_key', trimmed);
+    }
+
+    /**
+     * localStorage에서 Typecast API 키 가져오기
+     * @returns {string|null}
+     */
+    function getTypeCastKey() {
+      return localStorage.getItem('typecast_api_key');
     }
 
     /**
@@ -1034,6 +1076,9 @@
     saveApiKeyBtn.addEventListener('click', async function () {
       const apiKey = apiKeyInput.value;
       if (!saveApiKey(apiKey)) return;
+
+      // Typecast 키도 저장 (선택)
+      saveTypeCastKey(typecastKeyInput.value);
 
       // 버튼 로딩 상태
       saveApiKeyBtn.textContent = '⏳ 모델 확인 중...';
@@ -1417,14 +1462,18 @@
     // 새 API 키 저장 버튼 클릭
     modalSaveBtn.addEventListener('click', function () {
       const newKey = newApiKeyInput.value.trim();
+      const newTcKey = newTypecastKeyInput.value.trim();
 
-      if (!newKey) {
-        alert('새 API 키를 입력해주세요.');
+      if (!newKey && !newTcKey) {
+        alert('변경할 API 키를 입력해주세요.');
         return;
       }
 
-      // 새 API 키 저장
-      localStorage.setItem('gemini_api_key', newKey);
+      // 새 Gemini API 키 저장
+      if (newKey) localStorage.setItem('gemini_api_key', newKey);
+
+      // 새 Typecast API 키 저장
+      if (newTcKey) localStorage.setItem('typecast_api_key', newTcKey);
 
       // 모달 닫기
       settingsModal.style.display = 'none';
@@ -1600,31 +1649,96 @@
 
       // TTS를 끄면 현재 재생 중인 음성도 즉시 중지
       if (!isTtsEnabled) {
-        window.speechSynthesis.cancel();
+        if (currentAudio) { currentAudio.pause(); currentAudio = null; }
+        if (window.speechSynthesis) window.speechSynthesis.cancel();
       }
 
       updateVoiceBtn(); // 버튼 아이콘 업데이트
     });
 
+    // 현재 재생 중인 오디오 (중지용)
+    let currentAudio = null;
+
     /**
-     * 텍스트를 음성으로 읽어주는 함수 (TTS)
+     * Typecast API로 텍스트를 음성으로 읽어주는 함수
+     * actor: tc_6809c111e5e8c73f8a0237b2 (여성 목소리)
      * @param {string} text - 읽어줄 텍스트
      */
-    function speakText(text) {
-      // TTS가 꺼져 있거나 브라우저가 지원하지 않으면 실행하지 않음
-      if (!isTtsEnabled || !window.speechSynthesis) return;
+    async function speakText(text) {
+      if (!isTtsEnabled) return;
 
-      // 이전에 재생 중인 음성이 있으면 먼저 중지
-      window.speechSynthesis.cancel();
+      // 이전 오디오 중지
+      if (currentAudio) {
+        currentAudio.pause();
+        currentAudio = null;
+      }
 
-      // 음성 출력 설정
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = 'ko-KR';  // 한국어 음성 사용
-      utterance.rate = 1.0;      // 말하기 속도 (0.5~2.0, 1.0이 기본값)
-      utterance.pitch = 1.1;     // 음높이 (0~2.0, 1.0이 기본값, 1.1은 약간 높음)
+      const tcKey = getTypeCastKey();
 
-      // 음성 출력 시작
-      window.speechSynthesis.speak(utterance);
+      // Typecast API 키가 없으면 브라우저 기본 TTS 사용
+      if (!tcKey) {
+        if (!window.speechSynthesis) return;
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'ko-KR';
+        utterance.rate = 1.0;
+        utterance.pitch = 1.1;
+        window.speechSynthesis.speak(utterance);
+        return;
+      }
+
+      try {
+        // 1단계: 음성 합성 요청
+        const res = await fetch('https://typecast.ai/api/speak', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${tcKey}`
+          },
+          body: JSON.stringify({
+            actor_id: 'tc_6809c111e5e8c73f8a0237b2',
+            text: text,
+            lang: 'auto',
+            xapi_hd: true,
+            model_version: 'latest'
+          })
+        });
+
+        if (!res.ok) {
+          console.warn('Typecast API 오류:', res.status);
+          return;
+        }
+
+        const data = await res.json();
+        const speakUrl = data?.result?.speak_v2_url;
+        if (!speakUrl) return;
+
+        // 2단계: 완료될 때까지 폴링 (최대 30초)
+        let audioUrl = null;
+        for (let i = 0; i < 30; i++) {
+          await new Promise(r => setTimeout(r, 1000));
+          const pollRes = await fetch(speakUrl, {
+            headers: { 'Authorization': `Bearer ${tcKey}` }
+          });
+          if (!pollRes.ok) break;
+          const pollData = await pollRes.json();
+          const status = pollData?.result?.status;
+          if (status === 'done') {
+            audioUrl = pollData?.result?.audio_download_url;
+            break;
+          }
+          if (status === 'error') break;
+        }
+
+        if (!audioUrl) return;
+
+        // 3단계: 오디오 재생
+        if (!isTtsEnabled) return; // 재생 전 다시 확인
+        currentAudio = new Audio(audioUrl);
+        currentAudio.play().catch(e => console.warn('오디오 재생 실패:', e));
+      } catch (e) {
+        console.warn('Typecast TTS 실패:', e);
+      }
     }
 
     // -----------------------------------------------
