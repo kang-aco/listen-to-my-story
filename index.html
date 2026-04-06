@@ -678,9 +678,62 @@
     .header-voice-btn.muted {
       opacity: 0.5;
     }
+
+    /* ===========================
+       업데이트 알림 토스트
+    =========================== */
+    #update-toast {
+      display: none;
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #37474f;
+      color: white;
+      border-radius: 16px;
+      padding: 14px 20px;
+      font-size: 14px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+      z-index: 9999;
+      align-items: center;
+      gap: 14px;
+      white-space: nowrap;
+      animation: slideUp 0.3s ease;
+    }
+
+    #update-toast.show {
+      display: flex;
+    }
+
+    #update-toast-btn {
+      background: #7986cb;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      padding: 7px 14px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    #update-toast-btn:hover {
+      background: #5c6bc0;
+    }
+
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateX(-50%) translateY(16px); }
+      to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+    }
   </style>
 </head>
 <body>
+
+  <!-- 업데이트 알림 토스트 -->
+  <div id="update-toast">
+    🆕 새 버전이 있습니다
+    <button id="update-toast-btn">새로고침</button>
+  </div>
 
   <!-- ===========================
        API 키 입력 화면
@@ -1751,11 +1804,54 @@
     // -----------------------------------------------
     // 15. PWA 서비스 워커 등록
     // -----------------------------------------------
+    // -----------------------------------------------
+    // 16. PWA 서비스 워커 등록 + 업데이트 감지
+    // -----------------------------------------------
     if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js')
-          .then(() => console.log('서비스 워커 등록 완료'))
-          .catch((err) => console.warn('서비스 워커 등록 실패:', err));
+      window.addEventListener('load', async () => {
+        try {
+          const reg = await navigator.serviceWorker.register('./sw.js');
+          console.log('서비스 워커 등록 완료');
+
+          const toast = document.getElementById('update-toast');
+          const toastBtn = document.getElementById('update-toast-btn');
+
+          // 새 SW가 대기 중이면 바로 토스트 표시
+          if (reg.waiting) {
+            toast.classList.add('show');
+          }
+
+          // 새 SW가 설치될 때 감지
+          reg.addEventListener('updatefound', () => {
+            const newWorker = reg.installing;
+            newWorker.addEventListener('statechange', () => {
+              // 설치 완료 + 이전 SW가 있을 때(= 업데이트 상황)
+              if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                toast.classList.add('show');
+              }
+            });
+          });
+
+          // "새로고침" 버튼 → 새 SW 즉시 활성화
+          toastBtn.addEventListener('click', () => {
+            if (reg.waiting) {
+              reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+            }
+            toast.classList.remove('show');
+          });
+
+          // SW 교체 완료 → 페이지 새로고침
+          let refreshing = false;
+          navigator.serviceWorker.addEventListener('controllerchange', () => {
+            if (!refreshing) {
+              refreshing = true;
+              window.location.reload();
+            }
+          });
+
+        } catch (err) {
+          console.warn('서비스 워커 등록 실패:', err);
+        }
       });
     }
   </script>
