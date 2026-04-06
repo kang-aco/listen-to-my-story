@@ -56,7 +56,8 @@ export async function onRequest(context) {
       body: JSON.stringify({
         actor_id: ACTOR_ID,
         text,
-        lang: 'auto',
+        lang: 'ko',
+        xapi_hd: true,
         model_version: 'latest'
       })
     });
