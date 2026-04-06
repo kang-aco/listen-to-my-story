@@ -59,10 +59,11 @@ export async function onRequest(context) {
 
   if (!speakRes.ok) {
     const errBody = await speakRes.text().catch(() => '');
+    console.error('[speak] Typecast error', speakRes.status, errBody);
     return json({
       error: `Typecast speak failed: ${speakRes.status}`,
       detail: errBody
-    }, speakRes.status);
+    }, 200); // 200으로 반환해 클라이언트 console.warn이 detail을 볼 수 있도록
   }
 
   let speakData;
