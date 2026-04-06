@@ -13,47 +13,58 @@ const TYPECAST_BASE = 'https://typecast.ai';
  * 선호: 여성 → 한국어 → 첫 번째 actor
  */
 async function resolveActorId(apiKey) {
-  try {
-    const res = await fetch(`${TYPECAST_BASE}/api/actor`, {
-      headers: { 'Authorization': `Bearer ${apiKey}` }
-    });
-    if (!res.ok) return null;
+  // 시도할 actor 목록 엔드포인트들
+  const endpoints = [
+    `${TYPECAST_BASE}/api/actor`,
+    `${TYPECAST_BASE}/api/actor/list`,
+    `${TYPECAST_BASE}/api/v1/actor`,
+  ];
 
-    const data = await res.json();
-    // Typecast 응답 구조: { result: [...] } 또는 { actors: [...] } 등
-    const actors = Array.isArray(data?.result)
-      ? data.result
-      : Array.isArray(data?.actors)
-        ? data.actors
-        : Array.isArray(data)
-          ? data
-          : [];
+  for (const url of endpoints) {
+    try {
+      const res = await fetch(url, {
+        headers: { 'Authorization': `Bearer ${apiKey}` }
+      });
 
-    if (!actors.length) return null;
+      const raw = await res.text();
+      console.log('[speak] actor endpoint', url, res.status, raw.slice(0, 500));
 
-    console.log('[speak] available actors:', actors.length,
-      actors.slice(0, 3).map(a => ({
-        id: a.actor_id || a.id,
-        name: a.name,
-        lang: a.lang || a.language,
-        gender: a.gender || a.sex
-      }))
-    );
+      if (!res.ok) continue;
 
-    // 한국어 여성 우선
-    const pick =
-      actors.find(a =>
-        (a.lang === 'ko' || a.language === 'ko') &&
-        (a.gender === 'female' || a.sex === 'female')
-      ) ||
-      actors.find(a => a.lang === 'ko' || a.language === 'ko') ||
-      actors[0];
+      let data;
+      try { data = JSON.parse(raw); } catch { continue; }
 
-    return pick?.actor_id || pick?.id || null;
-  } catch (e) {
-    console.error('[speak] actor list error:', e.message);
-    return null;
+      const actors = Array.isArray(data?.result)
+        ? data.result
+        : Array.isArray(data?.actors)
+          ? data.actors
+          : Array.isArray(data?.data)
+            ? data.data
+            : Array.isArray(data)
+              ? data
+              : [];
+
+      if (!actors.length) continue;
+
+      // 한국어 여성 우선
+      const pick =
+        actors.find(a =>
+          (a.lang === 'ko' || a.language === 'ko') &&
+          (a.gender === 'female' || a.sex === 'female')
+        ) ||
+        actors.find(a => a.lang === 'ko' || a.language === 'ko') ||
+        actors[0];
+
+      const id = pick?.actor_id || pick?.id;
+      if (id) {
+        console.log('[speak] selected actor:', id, pick?.name);
+        return id;
+      }
+    } catch (e) {
+      console.error('[speak] actor fetch error', url, e.message);
+    }
   }
+  return null;
 }
 
 export async function onRequest(context) {
